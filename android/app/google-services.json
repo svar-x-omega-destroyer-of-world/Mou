@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "911936791750",
+    "project_id": "mou-5ca60",
+    "storage_bucket": "mou-5ca60.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:911936791750:android:56cb30ce9c3606695563c7",
+        "android_client_info": {
+          "package_name": "com.example.mou"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6aKiF3erbLiaB-V9z98N27krPQzpHc6U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
