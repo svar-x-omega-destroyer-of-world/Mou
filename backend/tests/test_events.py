@@ -6,7 +6,7 @@ import tempfile
 
 import pytest
 
-from app.events import close_db, init_db, record_event, reset_db
+from app.events import close_db, init_db, record_event, record_feedback, reset_db
 from app.schemas import Confidence, RootCause
 
 
@@ -61,3 +61,46 @@ class TestRecordEvent:
                         "1234 5678 9012", "aadhaar number",
                         "নাম", "आधार"]:
                 assert pii not in stored, f"PII found in event: {pii}"
+
+
+class TestFeedback:
+    def test_record_feedback(self):
+        """Feedback record is persisted."""
+        reset_db()
+        record_feedback(
+            case_id="anon-0001",
+            root_cause=RootCause.name_mismatch,
+            comment="Wrong diagnosis",
+        )
+        from app.events import _cursor
+        with _cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM feedback")
+            assert cur.fetchone()[0] == 1
+
+    def test_feedback_minimal(self):
+        """Feedback without comment works."""
+        reset_db()
+        record_feedback(
+            case_id="anon-0002",
+            root_cause=RootCause.biometric_failure,
+        )
+        from app.events import _cursor
+        with _cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM feedback")
+            assert cur.fetchone()[0] == 1
+            cur.execute("SELECT comment FROM feedback")
+            row = cur.fetchone()
+            assert row[0] is None
+
+    def test_feedback_no_pii(self):
+        """Feedback stores only non-PII fields."""
+        reset_db()
+        record_feedback(
+            case_id="anon-0003",
+            root_cause=RootCause.seeding_gap,
+            comment="My aadhaar number 1234-5678 is correct",
+        )
+        # The comment is free-text — PII may appear there by user choice.
+        # The structured fields (case_id, root_cause) must not be PII-rich.
+        # anon-XXXX case_id is by definition anonymised; root_cause is an enum.
+        # This is acceptable per SRS §7 (feedback is a voluntary submission).

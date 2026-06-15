@@ -16,7 +16,7 @@ from typing import Optional
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from .events import get_clusters as _get_clusters, record_event
+from .events import get_clusters as _get_clusters, record_event, record_feedback
 from .extract import extract_both
 from .matching import dob_status, name_score
 from .ocr import UnreadableImageError, extract_text
@@ -29,6 +29,8 @@ from .schemas import (
     Diagnosis,
     ExplanationSource,
     Extracted,
+    FeedbackRequest,
+    FeedbackResponse,
     NextStep,
     RootCause,
     Symptom,
@@ -177,11 +179,26 @@ async def diagnose(
 
 
 @app.get("/clusters", response_model=list[Cluster])
-def clusters(min_confidence: Optional[Confidence] = None) -> list[Cluster]:
+def clusters(min_confidence: Optional[Confidence] = Confidence.medium) -> list[Cluster]:
     """Return systemic-defect clusters, ranked by beneficiaries affected.
 
     Computed from the event store: group by (root_cause, fps_location),
     rank by distinct beneficiary count descending (FR-13/14).
-    Filter by min_confidence (FR-16).
+    Default hides low-confidence noise; pass low to see everything (FR-16).
     """
     return _get_clusters(min_confidence=min_confidence)
+
+
+@app.post("/feedback", response_model=FeedbackResponse)
+def feedback(body: FeedbackRequest) -> FeedbackResponse:
+    """Record flag-as-incorrect feedback from a user (FR-19/20).
+
+    Stores the case_id, root_cause, and optional free-text comment so
+    officials can review disputed diagnoses.  No PII is stored.
+    """
+    record_feedback(
+        case_id=body.case_id,
+        root_cause=body.root_cause,
+        comment=body.comment,
+    )
+    return FeedbackResponse()

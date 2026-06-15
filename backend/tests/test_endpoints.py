@@ -174,3 +174,57 @@ class TestClusters:
         data = resp.json()
         for c in data:
             assert c["confidence"] == "high", f"Low-confidence cluster leaked: {c}"
+
+    def test_clusters_default_hides_low(self):
+        """Default filter (medium) hides low-confidence clusters (FR-16, Risk R-3)."""
+        resp = client.get("/clusters")
+        data = resp.json()
+        for c in data:
+            assert c["confidence"] != "low", (
+                f"Low-confidence cluster leaked in default view: {c}"
+            )
+
+    def test_clusters_low_shows_all(self):
+        """Explicit min_confidence=low shows everything."""
+        resp = client.get("/clusters?min_confidence=low")
+        data = resp.json()
+        confs = {c["confidence"] for c in data}
+        assert "low" in confs, "Expected low-confidence clusters to appear"
+
+
+class TestFeedback:
+    def test_feedback_accepts_valid(self):
+        """POST /feedback with valid body returns 200."""
+        resp = client.post(
+            "/feedback",
+            json={
+                "case_id": "anon-0001",
+                "root_cause": "name_mismatch",
+                "comment": "This diagnosis seems incorrect.",
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"status": "ok"}
+
+    def test_feedback_minimal(self):
+        """Feedback without optional comment field works."""
+        resp = client.post(
+            "/feedback",
+            json={
+                "case_id": "anon-0002",
+                "root_cause": "biometric_failure",
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"status": "ok"}
+
+    def test_feedback_invalid_root_cause(self):
+        """Invalid root_cause value returns 422."""
+        resp = client.post(
+            "/feedback",
+            json={
+                "case_id": "anon-0003",
+                "root_cause": "not_a_real_cause",
+            },
+        )
+        assert resp.status_code == 422

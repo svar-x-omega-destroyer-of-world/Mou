@@ -62,6 +62,16 @@ class Diagnosis(BaseModel):
     explanation_source: ExplanationSource = ExplanationSource.fallback
 
 
+class FeedbackRequest(BaseModel):
+    case_id: str
+    root_cause: RootCause
+    comment: Optional[str] = None
+
+
+class FeedbackResponse(BaseModel):
+    status: str = "ok"
+
+
 class Case(BaseModel):
     case_id: str
     pattern: str

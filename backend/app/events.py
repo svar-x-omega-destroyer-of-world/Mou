@@ -62,6 +62,16 @@ CREATE INDEX IF NOT EXISTS idx_events_root_location
     ON events(root_cause, fps_location);
 CREATE INDEX IF NOT EXISTS idx_events_created
     ON events(created_at);
+
+CREATE TABLE IF NOT EXISTS feedback (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    case_id         TEXT    NOT NULL,
+    root_cause      TEXT    NOT NULL,
+    comment         TEXT,
+    created_at      TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_feedback_case
+    ON feedback(case_id);
 """
 
 
@@ -111,12 +121,42 @@ def reset_db() -> None:
     init_db()
     with _cursor() as cur:
         cur.execute("DELETE FROM events")
+        cur.execute("DELETE FROM feedback")
 
 
 def close_db() -> None:
     if hasattr(_local, "conn") and _local.conn is not None:
         _local.conn.close()
         _local.conn = None
+
+
+# ── Feedback (FR-19/20) ───────────────────────────────────────────────────────
+
+
+def record_feedback(
+    case_id: str,
+    root_cause: RootCause,
+    comment: Optional[str] = None,
+) -> None:
+    """Record a flag-as-incorrect feedback entry.
+
+    Args:
+        case_id: The anonymised case ID the user is flagging.
+        root_cause: The root cause that was diagnosed.
+        comment: Optional free-text comment from the user.
+    """
+    init_db()
+    with _cursor() as cur:
+        cur.execute(
+            """INSERT INTO feedback (case_id, root_cause, comment, created_at)
+               VALUES (?, ?, ?, ?)""",
+            (
+                case_id,
+                root_cause.value,
+                comment,
+                datetime.now(timezone.utc).isoformat(),
+            ),
+        )
 
 
 # ── Clustering (FR-13/14/16) ────────────────────────────────────────────────
