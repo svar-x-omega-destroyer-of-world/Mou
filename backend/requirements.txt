@@ -1,0 +1,11 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+python-multipart==0.0.20
+httpx==0.28.1            # FastAPI TestClient + Google Vision REST call (Risk R-1)
+# --- added in later phases ---
+# google-cloud-vision==3.12.1  # not needed: Vision is called over REST with an API key
+# rapidfuzz                  # fuzzy name matching (Phase 2)
+# indic-transliteration      # Bengali -> Latin romanisation (Phase 2)
+# google-generativeai        # Gemini explanation layer (Phase 2)
+# sqlalchemy / psycopg       # event store (Phase 3)

@@ -1,0 +1,41 @@
+[
+  {
+    "root_cause": "name_mismatch",
+    "fps_location": "Silchar FPS #4471",
+    "beneficiaries_affected": 40,
+    "confidence": "high",
+    "cases": [
+      { "case_id": "anon-0192", "pattern": "Begum/Begam" },
+      { "case_id": "anon-0211", "pattern": "Khatun/Khatoon" },
+      { "case_id": "anon-0233", "pattern": "Rahman/Rehman" }
+    ]
+  },
+  {
+    "root_cause": "seeding_gap",
+    "fps_location": "Karimganj FPS #2210",
+    "beneficiaries_affected": 27,
+    "confidence": "high",
+    "cases": [
+      { "case_id": "anon-0301", "pattern": "aadhaar_not_seeded" },
+      { "case_id": "anon-0318", "pattern": "aadhaar_not_seeded" }
+    ]
+  },
+  {
+    "root_cause": "biometric_failure",
+    "fps_location": "Hailakandi FPS #1180",
+    "beneficiaries_affected": 14,
+    "confidence": "medium",
+    "cases": [
+      { "case_id": "anon-0402", "pattern": "fingerprint_worn" }
+    ]
+  },
+  {
+    "root_cause": "dob_mismatch",
+    "fps_location": "Silchar FPS #4471",
+    "beneficiaries_affected": 6,
+    "confidence": "low",
+    "cases": [
+      { "case_id": "anon-0501", "pattern": "1989/1998" }
+    ]
+  }
+]

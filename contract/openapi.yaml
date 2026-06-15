@@ -1,0 +1,192 @@
+openapi: 3.0.3
+info:
+  title: Mou API
+  version: "2.0"
+  description: >
+    Locked API contract for Mou (SRS v2.0, §5). This is the single source of
+    truth shared by the FastAPI backend, the Flutter citizen app, and the
+    Next.js officials dashboard. Lock on day 1; build all three in parallel
+    against this spec and the mock responses in ./mocks.
+
+    Stability rules (SRS §3.3):
+      - The dashboard is READ-ONLY over GET /clusters. No write paths.
+      - Clusters are computed once in the backend so both clients show
+        identical numbers.
+      - Eligibility is never decided here; every diagnosis is "likely".
+
+servers:
+  - url: http://localhost:8000
+    description: Local backend (serves mocks until real logic lands)
+
+paths:
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+
+  /diagnose:
+    post:
+      summary: Diagnose a likely silent-exclusion root cause (citizen app)
+      description: >
+        Accepts the two document images plus a short structured intake and
+        returns the likely root cause, the extracted fields for side-by-side
+        verification, a plain-language explanation, and a concrete next step.
+        FR-5..FR-11. The response NEVER asserts eligibility (FR-10, FR-18).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [aadhaar_image, ration_card_image, symptom]
+              properties:
+                aadhaar_image:
+                  type: string
+                  format: binary
+                ration_card_image:
+                  type: string
+                  format: binary
+                symptom:
+                  $ref: "#/components/schemas/Symptom"
+                fps_location:
+                  type: string
+                  example: "Silchar FPS #4471"
+                language:
+                  type: string
+                  description: BCP-47-ish UI language code
+                  example: "bn"
+      responses:
+        "200":
+          description: Diagnosis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Diagnosis"
+        "422":
+          description: Unreadable / low-quality image (FR-4)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /clusters:
+    get:
+      summary: Ranked systemic defects (officials dashboard + app "you are one of many")
+      description: >
+        Returns clusters of anonymised exclusion events sharing a root cause and
+        location, ranked by distinct beneficiaries affected (descending).
+        Computed once in the backend (SRS §3.3). FR-12..FR-16.
+      parameters:
+        - name: min_confidence
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Confidence"
+          description: Only surface clusters at/above this confidence (FR-16).
+      responses:
+        "200":
+          description: Ranked cluster list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cluster"
+
+components:
+  schemas:
+    RootCause:
+      type: string
+      description: >
+        The single primary root cause chosen by deterministic, hardcoded rules
+        (FR-7). No LLM on this decision path.
+      enum:
+        - name_mismatch        # transliteration-level name difference across docs
+        - dob_mismatch         # date-of-birth differs across docs
+        - seeding_gap          # Aadhaar not seeded / linked to the ration card
+        - ekyc_incomplete      # e-KYC not completed
+        - biometric_failure    # repeated biometric auth failure
+        - unknown              # no rule matched with confidence; HITL
+
+    Confidence:
+      type: string
+      enum: [high, medium, low]
+
+    Symptom:
+      type: string
+      description: Short structured symptom captured at intake (FR-3).
+      enum:
+        - turned_away_at_fps
+        - card_not_found
+        - biometric_failed
+        - name_not_matching
+        - other
+
+    Extracted:
+      type: object
+      description: Fields pulled from both documents, shown side-by-side for user verification (FR-8).
+      properties:
+        aadhaar_name: { type: string, example: "Rahima Begum" }
+        ration_name_script: { type: string, example: "রহিমা বেগম" }
+        ration_name_romanized: { type: string, example: "Rahima Begam" }
+        aadhaar_dob: { type: string, nullable: true, example: "1989-03-12" }
+        ration_dob: { type: string, nullable: true, example: "1989-03-12" }
+
+    NextStep:
+      type: object
+      description: The one concrete action, framed as a hypothesis to bring (FR-9, R-2).
+      properties:
+        office: { type: string, example: "Circle Office" }
+        form: { type: string, example: "RC Correction" }
+
+    Diagnosis:
+      type: object
+      required: [root_cause, confidence, extracted, explanation, next_step, disclaimer]
+      properties:
+        root_cause: { $ref: "#/components/schemas/RootCause" }
+        confidence: { $ref: "#/components/schemas/Confidence" }
+        extracted: { $ref: "#/components/schemas/Extracted" }
+        explanation:
+          type: string
+          example: "Your name appears slightly differently on your two documents..."
+        next_step: { $ref: "#/components/schemas/NextStep" }
+        disclaimer:
+          type: string
+          example: "Likely cause — verify before acting."
+        explanation_source:
+          type: string
+          description: Whether the explanation came from the LLM or the local fallback (FR-11).
+          enum: [gemini, fallback]
+          example: gemini
+
+    Case:
+      type: object
+      properties:
+        case_id: { type: string, example: "anon-0192" }
+        pattern: { type: string, example: "Begum/Begam" }
+
+    Cluster:
+      type: object
+      required: [root_cause, fps_location, beneficiaries_affected, confidence, cases]
+      properties:
+        root_cause: { $ref: "#/components/schemas/RootCause" }
+        fps_location: { type: string, example: "Silchar FPS #4471" }
+        beneficiaries_affected: { type: integer, example: 40 }
+        confidence: { $ref: "#/components/schemas/Confidence" }
+        cases:
+          type: array
+          items: { $ref: "#/components/schemas/Case" }
+
+    Error:
+      type: object
+      properties:
+        error: { type: string, example: "unreadable_image" }
+        message: { type: string, example: "The ration card photo is too blurry to read. Please retake." }
