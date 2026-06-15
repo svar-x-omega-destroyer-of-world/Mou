@@ -1,84 +1,78 @@
 # Mou — Make Exclusion Visible
 
-**Hackathon build, June 14–21 2026.** Mou tells a PDS/ONORC beneficiary *why*
-they were silently cut off from their rations, and aggregates those cases so
-officials see systemic defects instead of isolated complaints.
+A hackathon project that answers one question: *why did my ration stop?*
 
-## Architecture
+Mou reads your Aadhaar and ration card, figures out which backend defect is
+blocking your rations, and — if enough people at the same shop have the same
+problem — surfaces it as a pattern officials can actually act on.
+
+Built June 14–21 2026.
+
+---
+
+## How it works
 
 ```
-Flutter citizen app ─┐                    ┌─ SQLite event store
-                     ├─► FastAPI backend ─┤   (anonymised)
-Next.js dashboard  ──┘    (single         └─ computes clusters
-  (officials,            source of              once
-   read-only)            truth)
+Flutter app ─┐              ┌─ SQLite (anonymised events only)
+             ├► FastAPI ────┤
+Dashboard  ──┘              └─ clusters computed once
 ```
 
-Two frontends, one backend, one locked JSON contract (`contract/openapi.yaml`).
+Two frontends, one backend, one API contract that never changes.
 
 ## Repos
 
-| Repo | Tech | URL |
-|------|------|-----|
-| Backend + Flutter app | FastAPI + Flutter | `github.com/svar-x-omega-destroyer-of-world/Mou` |
-| Dashboard | Next.js 16 + Tailwind | `github.com/svar-x-omega-destroyer-of-world/Mou-Dashboard` |
+- **Backend + app** — FastAPI + Flutter → `github.com/svar-x-omega-destroyer-of-world/Mou`
+- **Dashboard** — Next.js → `github.com/svar-x-omega-destroyer-of-world/Mou-Dashboard`
 
 ## Quick start
 
 ```bash
-# Backend (port 8000)
+# Backend
 cd backend
 python3 -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
 ./.venv/bin/uvicorn app.main:app --reload
 
-# Seed demo data
+# Seed some data so the dashboard isn't empty
 ./.venv/bin/python seed.py
 
-# Dashboard (port 3000)
-cd mou_dashboard    # separate repo
+# Dashboard (separate repo)
+cd mou_dashboard
 npm install
 npm run dev
 ```
 
-## Golden path — "Rahima Begum"
+## The Rahima Begum flow
 
-1. Upload an English Aadhaar ("Rahima Begum") + Bengali ration card ("রহিমা বেগম")
-2. System returns `name_mismatch` — the flagship transliteration defect
-3. The dashboard shows **40 beneficiaries** with the same pattern at Silchar FPS
-4. One rejection is misfortune; 40 sharing one root cause at one shop is a report
+1. Upload an English Aadhaar ("Rahima Begum") + a Bengali ration card ("রহিমা বেগম")
+2. Mou says `name_mismatch` — just a spelling difference, but enough to break things
+3. The dashboard shows **40 people** with the same mismatch at the same Silchar shop
+4. One person being turned away is hard to investigate. Forty at one shop is a pattern.
 
-## Tech stack (all free-tier)
+## Stack
 
-- **OCR:** Google Cloud Vision REST (primary) → Tesseract `ben+eng` (fallback)
-- **Matching:** `indic-transliteration` (ITRANS) + `rapidfuzz` token_sort_ratio
-- **Rules:** 6 deterministic rules, no LLM on classification path (FR-18)
-- **Explanation:** Gemini (personalised) → 6 pre-written local fallback strings
-- **Store:** SQLite (anonymised events only — no names, no Aadhaar numbers)
-- **Deploy:** Backend on Render/Railway, dashboard on Vercel, app as APK
+| Piece | What we used |
+|-------|-------------|
+| OCR | Google Cloud Vision, falls back to Tesseract |
+| Name matching | indic-transliteration + rapidfuzz |
+| Rules | 6 deterministic checks — no AI deciding anything |
+| Explanations | Gemini when available, local fallbacks when not |
+| Storage | SQLite, nothing but event metadata stored |
+| Frontends | Flutter (app) + Next.js (dashboard) |
 
-## What Mou does NOT do
+## What Mou will not do
 
-- **No eligibility decisions.** Output is always "likely cause" — never "you
-  qualify" or "you don't qualify". (FR-10)
-- **No government record modification.** Mou only reads the user's own
-  documents. It never writes to any database it doesn't own. (FR-17)
-- **No LLM on the decision path.** The root cause is chosen by deterministic
-  Python rules. The LLM (Gemini) only rephrases the explanation text. (FR-18)
-- **No personal data stored.** Events are anonymised to `{root_cause,
-  fps_location, document_pattern}`. No names, no Aadhaar numbers. (SRS §7)
-- **No contract changes.** The API shape (`openapi.yaml`) is locked — both
-  frontends depend on it.
+- Say whether you qualify for rations. It says "likely cause" and leaves it there.
+- Edit any government database. It reads documents, full stop.
+- Let an AI decide the root cause. That's pure Python rules.
+- Store your name or Aadhaar number. Events are anonymised.
+- Change the API on you. The contract is locked.
 
-## Production URLs
+## Live
 
 - **Dashboard:** https://moudashboard.vercel.app
-- **API:** Backend URL (set as `NEXT_PUBLIC_API_URL` for dashboard)
-
-## Invariants (re-read before every backend change)
-
-See `CLAUDE.md` §Invariants in the repo root.
 
 ---
 
-*Built with Claude Code, DeepSeek Flash V4, and a lot of chai.*
+*Built with Claude Code, DeepSeek, and probably too much chai.*
