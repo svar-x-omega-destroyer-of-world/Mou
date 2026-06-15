@@ -1,8 +1,6 @@
 """Mou backend — FastAPI service (SRS v2.0 §3, §5).
 
-Single source of truth for both frontends. Today it serves contract-compliant
-mock responses so the Flutter app and Next.js dashboard can integrate on day 1.
-The real pipeline lands behind the seams marked `# PHASE 2` / `# PHASE 3`:
+Single source of truth for both frontends.
 
     POST /diagnose : OCR -> field extraction -> transliteration-aware match
                      -> deterministic rules -> Gemini explanation (local fallback)
@@ -15,9 +13,14 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from .extract import extract_both
+from .matching import dob_status, name_score
+from .ocr import UnreadableImageError, extract_text
+from .rules import RuleInput, classify
+from .explain import explain
 from .schemas import (
     Case,
     Cluster,
@@ -42,6 +45,29 @@ app.add_middleware(
 )
 
 
+# ── Helpers ─────────────────────────────────────────────────────────────────
+
+_DISCLAIMER = (
+    "Likely cause — verify against your own documents before acting. "
+    "This is not an eligibility decision."
+)
+
+_NEXT_STEPS: dict[str, NextStep] = {
+    RootCause.name_mismatch: NextStep(office="Circle Office", form="RC Correction"),
+    RootCause.dob_mismatch: NextStep(office="Circle Office", form="DOB Correction"),
+    RootCause.seeding_gap: NextStep(office="Circle Office", form="Aadhaar Seeding"),
+    RootCause.ekyc_incomplete: NextStep(office="Circle Office", form="e-KYC Completion"),
+    RootCause.biometric_failure: NextStep(office="FPS / Circle Office", form="Alternate Auth Registration"),
+    RootCause.unknown: NextStep(office="Circle Office", form="Manual Record Check"),
+}
+
+
+def _next_step(root_cause: RootCause) -> NextStep:
+    return _NEXT_STEPS.get(root_cause, _NEXT_STEPS[RootCause.unknown])
+
+
+# ── Endpoints ───────────────────────────────────────────────────────────────
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -57,35 +83,58 @@ async def diagnose(
 ) -> Diagnosis:
     """Return the likely root cause for a single case.
 
-    MOCK: returns the locked Rahima Begum example. Real pipeline (PHASE 2):
-      1. PHASE 2  ocr.extract(aadhaar_image, ration_card_image)   # Risk R-1
-      2. PHASE 2  matched = transliteration_match(fields)
-      3. PHASE 2  cause, confidence = rules.classify(matched, symptom)   # FR-7
-      4. PHASE 2  text, src = explain(cause, matched)   # Gemini + fallback (FR-11)
-      5. PHASE 3  events.record(anonymise(cause, fps_location, pattern))  # FR-12
+    Pipeline:
+      1. OCR both images (Vision REST → Tesseract fallback).
+      2. Extract Aadhaar name + DOB and ration name + DOB.
+      3. Transliteration-aware name match (name_score, dob_status).
+      4. Deterministic rules (rules.classify).
+      5. Gemini explanation with local fallback (explain).
+      6. (Phase 3) Anonymised event recorded.
     """
+    # 1. OCR — read both images
+    try:
+        aadhaar_bytes = await aadhaar_image.read()
+        ration_bytes = await ration_card_image.read()
+    except Exception as exc:
+        raise HTTPException(400, detail=f"Failed to read upload: {exc}")
+
+    try:
+        aadhaar_text = extract_text(aadhaar_bytes)
+        ration_text = extract_text(ration_bytes)
+    except UnreadableImageError as exc:
+        raise HTTPException(422, detail={"error": "unreadable_image", "message": str(exc)})
+
+    # 2. Field extraction
+    extracted = extract_both(aadhaar_text, ration_text)
+
+    # 3. Matching
+    ns = name_score(extracted.aadhaar_name, extracted.ration_name_script)
+    ds = dob_status(extracted.aadhaar_dob, extracted.ration_dob)
+
+    # 4. Root-cause classification
+    cause, confidence = classify(RuleInput(
+        name_score=ns,
+        dob_status=ds,
+        symptom=symptom.value,
+    ))
+
+    # 5. Explanation
+    explanation_text, explanation_source = explain(
+        root_cause=cause,
+        confidence=confidence,
+        extracted=extracted,
+        symptom=symptom.value,
+        fps_location=fps_location,
+    )
+
     return Diagnosis(
-        root_cause=RootCause.name_mismatch,
-        confidence=Confidence.high,
-        extracted=Extracted(
-            aadhaar_name="Rahima Begum",
-            ration_name_script="রহিমা বেগম",
-            ration_name_romanized="Rahima Begam",
-            aadhaar_dob="1989-03-12",
-            ration_dob="1989-03-12",
-        ),
-        explanation=(
-            "Your name appears slightly differently on your two documents. On "
-            "your Aadhaar it reads 'Rahima Begum', but your ration card spells "
-            "it 'Rahima Begam' (রহিমা বেগম). This small spelling difference is a "
-            "common reason a ration is silently blocked at the shop."
-        ),
-        next_step=NextStep(office="Circle Office", form="RC Correction"),
-        disclaimer=(
-            "Likely cause — verify against your own documents before acting. "
-            "This is not an eligibility decision."
-        ),
-        explanation_source=ExplanationSource.fallback,
+        root_cause=cause,
+        confidence=confidence,
+        extracted=extracted,
+        explanation=explanation_text,
+        next_step=_next_step(cause),
+        disclaimer=_DISCLAIMER,
+        explanation_source=explanation_source,
     )
 
 

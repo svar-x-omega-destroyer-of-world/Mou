@@ -24,9 +24,9 @@ word moves the build forward without friction.
 
 | # | Task | Card | Status |
 |---|------|------|--------|
-| 1.0 | Place Mou's own Vision API key (HUMAN) | `task_1_0_vision_credentials.md` | ⏳ blocks 1.1 — human puts fresh key in `backend/spikes/.env` (`GOOGLE_VISION_API_KEY=`) |
-| 1.1 | OCR spike | `task_1_1_ocr_spike.md` | ✅ card ready — needs Task 1.0 done + photos (already added) |
-| 1.2 | Confirm contract + run mock backend | _emit on go_ | queued |
+| 1.0 | Place Mou's own Vision API key (HUMAN) | `task_1_0_vision_credentials.md` | ✅ done — fresh key in place (the 403 was billing, now resolved) |
+| 1.1 | OCR spike | `task_1_1_ocr_spike.md` | ✅ **DONE** — Risk R-1 cleared; VERDICT filled (Vision primary, Tesseract fallback) |
+| 1.2 | Confirm contract + run mock backend | _emit on go_ | ◀ **NEXT** |
 | 1.3 | Dashboard skeleton + deploy | _emit on go_ | queued |
 | 1.4 | App connects to mock | _emit on go_ | queued |
 | 2.1–2.5 | Diagnosis engine + citizen app | _emit on go_ | queued |
@@ -60,7 +60,9 @@ Anything else: pick the default, proceed, note it in one line.
 
 ## Right now
 
-Photos are in `backend/spikes/samples/` ✅. The remaining blocker is **Task 1.0**:
-put Mou's own **fresh Vision API key** in `backend/spikes/.env` as
-`GOOGLE_VISION_API_KEY=...` (no service-account JSON needed). Once that key is in
-place, say `go` and Task 1.1 runs against it.
+Phase 1 de-risking is done: Tasks 1.0 and 1.1 are complete. The OCR spike ran
+against real photos — Risk **R-1 is cleared**, names extract cleanly in Bengali +
+English, and the `# VERDICT:` line in `ocr_spike.py` is filled (Google Vision as
+primary OCR, Tesseract `ben+eng` as fallback).
+
+**Next: Task 1.2 — confirm contract + run mock backend.** Say `go` to emit its card.
