@@ -20,18 +20,35 @@ word moves the build forward without friction.
 
 ---
 
+## Lane — build Team Member 1's work only
+
+This workspace builds **Team Member 1's** half: Backend & AI/OCR. **Team Member 2**
+(Flutter app + Next.js dashboard) is a separate human teammate building in parallel
+against the same locked contract. The executor does **not** build TM2's items.
+
+**On every `go`, before emitting or executing a card:**
+1. Open `docs/execution_phases.md` and read the **Team Member 1** column for the
+   current phase — that column is the authoritative list of what is yours to build.
+2. From the queue below (order = `build_plan.md`), take the next unstarted card in
+   **TM1's lane**. Skip `TM2` rows. For `mixed` rows, build only the TM1-column items
+   named in `execution_phases.md`.
+3. Where your work touches a TM2 surface (e.g. the dashboard reading `/clusters`),
+   build to the **locked contract / mock** — never to TM2's code.
+
+---
+
 ## Task queue (order = build_plan.md)
 
-| # | Task | Card | Status |
-|---|------|------|--------|
-| 1.0 | Place Mou's own Vision API key (HUMAN) | `task_1_0_vision_credentials.md` | ✅ done — fresh key in place (the 403 was billing, now resolved) |
-| 1.1 | OCR spike | `task_1_1_ocr_spike.md` | ✅ **DONE** — Risk R-1 cleared; VERDICT filled (Vision primary, Tesseract fallback) |
-| 1.2 | Confirm contract + run mock backend | _emit on go_ | ◀ **NEXT** |
-| 1.3 | Dashboard skeleton + deploy | _emit on go_ | queued |
-| 1.4 | App connects to mock | _emit on go_ | queued |
-| 2.1–2.5 | Diagnosis engine + citizen app | _emit on go_ | queued |
-| 3.1–3.4 | Event store + dashboard | _emit on go_ | queued |
-| 4.x / 5.x | Resilience + demo | _emit on go_ | queued |
+| # | Task | Lane | Card | Status |
+|---|------|------|------|--------|
+| 1.0 | Place Mou's own Vision API key | TM1 (human) | `task_1_0_vision_credentials.md` | ✅ done — fresh key in place (the 403 was billing, now resolved) |
+| 1.1 | OCR spike | TM1 | `task_1_1_ocr_spike.md` | ✅ **DONE** — Risk R-1 cleared; VERDICT filled (Vision primary, Tesseract fallback) |
+| 1.2 | Confirm contract + run mock backend | TM1 | _emit on go_ | ◀ **NEXT** |
+| 1.3 | Dashboard skeleton + deploy | TM2 | _emit on go_ | skip — teammate's lane |
+| 1.4 | App connects to mock | TM2 | _emit on go_ | skip — teammate's lane |
+| 2.1–2.5 | Diagnosis engine + citizen app | mixed → TM1 col | _emit on go_ | queued — build TM1 items (matching, rules, explanation) |
+| 3.1–3.4 | Event store + dashboard | mixed → TM1 col | _emit on go_ | queued — build TM1 items (event store, clustering, seeding) |
+| 4.x / 5.x | Resilience + demo | mixed / collab | _emit on go_ | queued |
 
 ---
 

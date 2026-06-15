@@ -16,6 +16,7 @@ from typing import Optional
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from .events import get_clusters as _get_clusters, record_event
 from .extract import extract_both
 from .matching import dob_status, name_score
 from .ocr import UnreadableImageError, extract_text
@@ -64,6 +65,31 @@ _NEXT_STEPS: dict[str, NextStep] = {
 
 def _next_step(root_cause: RootCause) -> NextStep:
     return _NEXT_STEPS.get(root_cause, _NEXT_STEPS[RootCause.unknown])
+
+
+def _document_pattern(cause: RootCause, ns: int, ds: str, extracted: Extracted) -> str:
+    """Generate a short, anonymised pattern descriptor for the event store.
+
+    Examples: "Begum/Begam", "1989/1998", "aadhaar_not_seeded".
+    """
+    if cause == RootCause.name_mismatch and extracted.aadhaar_name and extracted.ration_name_script:
+        # Short descriptor: extract differing tokens
+        a_tokens = extracted.aadhaar_name.lower().split()
+        r_tokens = extracted.ration_name_script.lower().split()
+        diff = []
+        for a, r in zip(a_tokens, r_tokens):
+            if a != r:
+                diff.append(f"{a}/{r}")
+        return "/".join(diff[:2]) if diff else "name_diff"
+    if cause == RootCause.dob_mismatch and extracted.aadhaar_dob and extracted.ration_dob:
+        return f"{extracted.aadhaar_dob[:4]}/{extracted.ration_dob[:4]}"
+    # Fixed patterns for other causes
+    return {
+        RootCause.biometric_failure: "fingerprint_worn",
+        RootCause.seeding_gap: "aadhaar_not_seeded",
+        RootCause.ekyc_incomplete: "ekyc_incomplete",
+        RootCause.unknown: "unknown",
+    }.get(cause, "other")
 
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
@@ -127,6 +153,18 @@ async def diagnose(
         fps_location=fps_location,
     )
 
+    # 6. Anonymised event record (FR-12)
+    pattern = _document_pattern(cause, ns, ds, extracted)
+    try:
+        record_event(
+            root_cause=cause,
+            confidence=confidence,
+            fps_location=fps_location,
+            document_pattern=pattern,
+        )
+    except Exception:
+        pass  # event recording must never break the diagnosis
+
     return Diagnosis(
         root_cause=cause,
         confidence=confidence,
@@ -142,52 +180,8 @@ async def diagnose(
 def clusters(min_confidence: Optional[Confidence] = None) -> list[Cluster]:
     """Return systemic-defect clusters, ranked by beneficiaries affected.
 
-    MOCK: returns seeded synthetic clusters. Real implementation (PHASE 3):
-      rows = events.all()
-      clusters = groupby(rows, key=(root_cause, fps_location))   # FR-13
-      rank by distinct beneficiaries desc                        # FR-14
-      drop clusters below the confidence threshold               # FR-16
+    Computed from the event store: group by (root_cause, fps_location),
+    rank by distinct beneficiary count descending (FR-13/14).
+    Filter by min_confidence (FR-16).
     """
-    data = [
-        Cluster(
-            root_cause=RootCause.name_mismatch,
-            fps_location="Silchar FPS #4471",
-            beneficiaries_affected=40,
-            confidence=Confidence.high,
-            cases=[
-                Case(case_id="anon-0192", pattern="Begum/Begam"),
-                Case(case_id="anon-0211", pattern="Khatun/Khatoon"),
-                Case(case_id="anon-0233", pattern="Rahman/Rehman"),
-            ],
-        ),
-        Cluster(
-            root_cause=RootCause.seeding_gap,
-            fps_location="Karimganj FPS #2210",
-            beneficiaries_affected=27,
-            confidence=Confidence.high,
-            cases=[
-                Case(case_id="anon-0301", pattern="aadhaar_not_seeded"),
-                Case(case_id="anon-0318", pattern="aadhaar_not_seeded"),
-            ],
-        ),
-        Cluster(
-            root_cause=RootCause.biometric_failure,
-            fps_location="Hailakandi FPS #1180",
-            beneficiaries_affected=14,
-            confidence=Confidence.medium,
-            cases=[Case(case_id="anon-0402", pattern="fingerprint_worn")],
-        ),
-        Cluster(
-            root_cause=RootCause.dob_mismatch,
-            fps_location="Silchar FPS #4471",
-            beneficiaries_affected=6,
-            confidence=Confidence.low,
-            cases=[Case(case_id="anon-0501", pattern="1989/1998")],
-        ),
-    ]
-
-    order = {Confidence.high: 3, Confidence.medium: 2, Confidence.low: 1}
-    if min_confidence is not None:
-        data = [c for c in data if order[c.confidence] >= order[min_confidence]]
-    data.sort(key=lambda c: c.beneficiaries_affected, reverse=True)
-    return data
+    return _get_clusters(min_confidence=min_confidence)
