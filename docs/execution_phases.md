@@ -57,4 +57,4 @@ The build window is short (June 14–21, 2026), so the plan prioritizes de-riski
   * Define the demo "Golden Path": Use the "Rahima Begum" persona (English Aadhaar + Bengali Ration card -> Name Mismatch -> "You are one of many" dashboard zoom-out).
   * Record the screen-capture backup video in case of live environment failure.
   * Update `README.md` with setup instructions, free-tier tech stack disclosure, build-assistance tooling (Claude Code/DeepSeek/Stitch), and clear boundaries of what Mou *does not* do (i.e. changing government records).
-  * Build the presentation deck focusing on systemic visibility (Inversion of the problem). 
+  * Build the presentation deck on TWO pillars: (1) **systemic visibility** — the inversion (one rejection = misfortune; many sharing a root cause = an accountability report); and (2) **generality** — Mou is a *silent-exclusion engine for any government scheme*, proven live on PDS rations. Include **one mockup slide** applying the identical flow to a second scheme (e.g. a pension or scholarship name mismatch) — a visual mockup only, **no code**. Canonical narrative: `docs/positioning.md`. 

@@ -46,11 +46,13 @@ Mou — SRS v2.0USAII Hackathon 2026
 
 ## **1.1 Purpose** 
 
-This document specifies the software requirements for Mou, an AI-powered tool that helps legitimate beneficiaries of India's Public Distribution System (PDS) and the One Nation One Ration Card (ONORC) scheme understand why they are being silently excluded from their food entitlements, take a concrete next step to fix it, and — in aggregate — make the underlying systemic failures visible to authorities. Version 2.0 is the build-ready reference: it fixes the implementation architecture, names the technology stack, and states the project's dominant technical risk and its fallback path. 
+This document specifies the software requirements for Mou, an AI-powered tool that helps people who are **silently excluded from a government welfare scheme because their identity documents do not match** understand why, take a concrete next step to fix it, and — in aggregate — make the underlying systemic failures visible to authorities. The diagnosis engine is **scheme-agnostic**; this build proves it on one flagship scheme — India's Public Distribution System (PDS) and One Nation One Ration Card (ONORC) — where the same name / date-of-birth / address mismatch silently cuts beneficiaries off from their food entitlements. Version 2.0 is the build-ready reference: it fixes the implementation architecture, names the technology stack, and states the project's dominant technical risk and its fallback path. 
 
 ## **1.2 Scope** 
 
-Mou addresses a documented failure mode of PDS/ONORC: a legitimate, enrolled beneficiary is silently cut off from rations because of a backend issue — a name or date-of-birth mismatch between Aadhaar and ration card (often across scripts, e.g. Bengali vs. English), an incomplete e-KYC / Aadhaar-seeding gap, or repeated biometric authentication failure. No notification is sent; the person discovers the exclusion only when turned away at the Fair Price Shop (FPS). 
+Mou's general target is **silent exclusion from any government scheme caused by a document name / date-of-birth / address mismatch** — the same defect recurs across pensions, scholarships, and subsidies. This build proves the engine on one flagship scheme, **PDS/ONORC**, chosen because it carries every hard part (cross-script documents, real beneficiaries, systemic clustering).
+
+The build addresses a documented failure mode of PDS/ONORC: a legitimate, enrolled beneficiary is silently cut off from rations because of a backend issue — a name or date-of-birth mismatch between Aadhaar and ration card (often across scripts, e.g. Bengali vs. English), an incomplete e-KYC / Aadhaar-seeding gap, or repeated biometric authentication failure. No notification is sent; the person discovers the exclusion only when turned away at the Fair Price Shop (FPS). 
 
 The product has two faces over one backend: 
 
@@ -271,7 +273,7 @@ _Priority: M = must-have for demo, S = should-have, C = could-have._
 |**ID**|**Requirement**|**Priority**|
 |---|---|---|
 |FR-1|The app shall allow a user to upload images of an Aadhaar card<br>and a ration card.|M|
-|FR-2|The app shall let the user select a language and indicate self-serve<br>vs. assisted (proxy) mode.|S|
+|FR-2|The app shall let the user select a language and indicate self-serve<br>vs. assisted (proxy) mode. The self-serve vs. "filing on someone<br>else's behalf" choice shall be an explicit, visible **first step** in the<br>intake flow (not buried in settings). The live demo shall exercise<br>the proxy path at least once.|M|
 |FR-3|The app shall capture a short structured symptom (e.g. turned<br>away at FPS, card not found) and the FPS/location.|M|
 |FR-4|The app shall detect unreadable / low-quality images and prompt<br>re-upload.|S|
 
@@ -410,7 +412,7 @@ Mou — SRS v2.0USAII Hackathon 2026
 
 ## **11.1 Build-Window Scope** 
 
-- One scheme (PDS/ONORC); one cross-script document pair (Bengali ration card + English Aadhaar). 
+- One scheme (PDS/ONORC); one cross-script document pair (Bengali ration card + English Aadhaar). **The engine is scheme-agnostic, but the code in this build implements only this one scheme — additional schemes are pitch/roadmap, not built here.** 
 
 - Stage 1 (diagnosis) fully live and working on a real scanned/photographed pair. 
 
@@ -430,7 +432,7 @@ Mou — SRS v2.0USAII Hackathon 2026
 
 - Integration with live government databases or write-back of corrections. 
 
-- Multiple schemes or Indic scripts beyond the demo pair. 
+- Multiple schemes or Indic scripts beyond the demo pair — **roadmap, not this build.** The engine generalizes (it diagnoses document mismatch, not rations specifically); proving it on PDS/ONORC first is deliberate, and broadening the build mid-window is explicitly disallowed. 
 
 - Accounts and production-grade security hardening. 
 

@@ -135,11 +135,13 @@ two names in `extracted`; posting an unreadable image returns HTTP 422 (FR-4).
 
 ### Task 2.5 — Flutter intake + verification UI
 **Goal:** Build the real app flow (≤4 steps, low-literacy friendly, FR-1..4, FR-8).
-- Screens: upload Aadhaar + ration → language + self/proxy toggle → symptom +
-  FPS location → **side-by-side verification** (Aadhaar name vs ration name) →
-  result with explanation + next step + disclaimer.
+- Screens: **explicit self-serve vs. "filing on someone else's behalf" choice as
+  the visible first step** (FR-2, now **M** — not a settings toggle) → upload Aadhaar
+  + ration + language → symptom + FPS location → **side-by-side verification**
+  (Aadhaar name vs ration name) → result with explanation + next step + disclaimer.
 **Acceptance:** a person can complete the flow in ≤4 steps and see both names
-side by side before the result. Disclaimer visible (FR-20).
+side by side before the result; the self/proxy choice is the first thing shown
+(FR-2); disclaimer visible (FR-20).
 **DoD:** demoable citizen flow against the live backend.
 
 ---

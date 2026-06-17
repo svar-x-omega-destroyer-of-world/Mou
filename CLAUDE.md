@@ -1,8 +1,16 @@
 # CLAUDE.md — Mou builder manual
 
-You are building **Mou**: an AI tool that tells a PDS/ONORC beneficiary **why**
-they were silently cut off from their rations, and aggregates cases so officials
-see systemic defects. Hackathon build, window June 14–21 2026.
+You are building **Mou**: an AI tool that tells someone **why** they were silently
+excluded from a government welfare scheme because their identity documents don't match,
+and aggregates cases so officials see the systemic defect. The engine is scheme-agnostic;
+**this build implements exactly one flagship scheme: PDS/ONORC food rations** (Aadhaar vs
+ration-card name/DOB mismatch, seeding gap, e-KYC gap, biometric failure). Hackathon
+build, window June 14–21 2026.
+
+> **Scope guard — pitch is broad, build is narrow.** The "any government scheme" framing
+> is for the README / deck / demo only. Build **one scheme** (PDS/ONORC). Do **not** add
+> other schemes, document types, fields, or rules to chase generality — that's roadmap,
+> not this build.
 
 **Read these files before working. They override your assumptions:**
 - `docs/srs_digest.md` — what to build + the FR-1..FR-20 requirement IDs (short).
@@ -94,6 +102,7 @@ cd app && flutter pub get && flutter run
 ## What NOT to do
 - Don't redesign the rules or thresholds — they're fixed in `rules_spec.md`.
 - Don't add root causes beyond the 6 + fallback.
+- Don't add schemes / document types / fields beyond PDS/ONORC ration cards. The broad "any government scheme" framing is pitch/README only — never build scope.
 - Don't put an LLM call on the classification path.
 - Don't store names/Aadhaar numbers anywhere.
 - Don't refactor the contract or rename API fields.

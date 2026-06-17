@@ -43,12 +43,12 @@ against the same locked contract. The executor does **not** build TM2's items.
 |---|------|------|------|--------|
 | 1.0 | Place Mou's own Vision API key | TM1 (human) | `task_1_0_vision_credentials.md` | ✅ done — fresh key in place (the 403 was billing, now resolved) |
 | 1.1 | OCR spike | TM1 | `task_1_1_ocr_spike.md` | ✅ **DONE** — Risk R-1 cleared; VERDICT filled (Vision primary, Tesseract fallback) |
-| 1.2 | Confirm contract + run mock backend | TM1 | _emit on go_ | ◀ **NEXT** |
-| 1.3 | Dashboard skeleton + deploy | TM2 | _emit on go_ | skip — teammate's lane |
-| 1.4 | App connects to mock | TM2 | _emit on go_ | skip — teammate's lane |
-| 2.1–2.5 | Diagnosis engine + citizen app | mixed → TM1 col | _emit on go_ | queued — build TM1 items (matching, rules, explanation) |
-| 3.1–3.4 | Event store + dashboard | mixed → TM1 col | _emit on go_ | queued — build TM1 items (event store, clustering, seeding) |
-| 4.x / 5.x | Resilience + demo | mixed / collab | _emit on go_ | queued |
+| 1.2 | Confirm contract + run backend | TM1 | done | ✅ contract locked; real backend built (past mock) |
+| 1.3 | Dashboard skeleton + deploy | TM2 | — | teammate's lane |
+| 1.4 | App connects to mock | TM2 | — | teammate's lane |
+| 2.1–2.5 | Diagnosis engine (matching, rules, explanation) | TM1 | done | ✅ built + tested |
+| 3.1–3.4 | Event store + clustering + seed | TM1 | done | ✅ built + tested; store seeded (101 events) |
+| 4.x / 5.x | Resilience + demo | mixed / collab | partial | ✅ TM1 backend (thresholds, fallbacks, feedback) done; demo + deck remain (collab) |
 
 ---
 
@@ -77,9 +77,13 @@ Anything else: pick the default, proceed, note it in one line.
 
 ## Right now
 
-Phase 1 de-risking is done: Tasks 1.0 and 1.1 are complete. The OCR spike ran
-against real photos — Risk **R-1 is cleared**, names extract cleanly in Bengali +
-English, and the `# VERDICT:` line in `ocr_spike.py` is filled (Google Vision as
-primary OCR, Tesseract `ben+eng` as fallback).
+**Team Member 1's backend/AI lane is COMPLETE and verified.** The full pipeline is
+built and committed (OCR → extract → match → rules → explain → events → clustering),
+the event store is seeded (101 synthetic events), and the test suite is **46/46 green**.
+R-1 is cleared. There is no remaining `go`-style build work in TM1's lane.
 
-**Next: Task 1.2 — confirm contract + run mock backend.** Say `go` to emit its card.
+**The objective has shifted from build → win.** Remaining levers (none are TM1 solo
+build tasks): (1) integrate TM2's Flutter app + dashboard against the live backend;
+(2) the golden-path demo + deck (see `docs/positioning.md`); (3) optional hardening —
+give the cluster tests their own seeded DB instead of depending on a pre-seeded
+`mou_events.db`.

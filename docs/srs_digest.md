@@ -9,12 +9,20 @@
 
 ## What Mou is (one paragraph)
 
-A legitimate PDS/ONORC beneficiary is silently denied rations because of a
-backend defect (name/DOB mismatch across Aadhaar vs ration card, Aadhaar not
-seeded, e-KYC gap, or biometric failure). No notice is ever sent — they find out
-only when turned away at the shop. **Mou diagnoses the likely cause from the
-user's own documents, explains it in plain language, gives one concrete next
-step, and aggregates anonymised cases so officials see systemic defects.**
+Across India's welfare schemes, legitimate, enrolled people are silently excluded —
+not because they are ineligible, but because a **name, date-of-birth, or address does
+not match across their documents** (often across scripts, e.g. Bengali vs English). No
+notice is ever sent; they find out only when turned away. **Mou diagnoses the likely
+cause from the user's own documents, explains it in plain language, gives one concrete
+next step, and aggregates anonymised cases so officials see the systemic defect.** The
+engine is scheme-agnostic; **this build proves it on one flagship scheme — PDS/ONORC
+food rations** (mismatch across Aadhaar vs ration card, Aadhaar-seeding gap, e-KYC gap,
+or biometric failure).
+
+> **Positioning vs build scope:** the "any scheme" framing above is the product vision
+> and the pitch (it fits the *Benefits Navigator* direction). **The code in this build
+> implements exactly one scheme — PDS/ONORC. Do not build others** (see `CLAUDE.md`
+> §Scope guard).
 
 **Mou does NOT:** decide eligibility, edit any government record, give legal/medical
 advice, or guarantee outcomes. It flags; humans decide.
@@ -29,7 +37,7 @@ Priority: **M = must-have for demo**, S = should-have, C = could-have.
 | ID | M/S | Requirement |
 |----|----|-------------|
 | FR-1 | **M** | Upload images of an Aadhaar card and a ration card. |
-| FR-2 | S | Select a language; choose self-serve vs assisted (proxy) mode. |
+| FR-2 | **M** | Select a language; choose self-serve vs assisted (proxy) mode. The self-serve vs "filing on someone else's behalf" choice is an **explicit, visible first step** in the intake flow (not buried in settings). The demo exercises the proxy path at least once. |
 | FR-3 | **M** | Capture a short structured symptom (e.g. turned away at FPS) + FPS location. |
 | FR-4 | S | Detect unreadable/low-quality images and prompt re-upload. |
 
@@ -96,9 +104,10 @@ Priority: **M = must-have for demo**, S = should-have, C = could-have.
 - **Clustering + dashboard demonstrated on synthetic data**, narrated as "every real diagnosis feeds this at scale".
 - **Opening:** one named case (Rahima Begum) → zoom out to her cluster.
 
-**Out of scope this build:** live government DB integration or write-back;
-multiple schemes / Indic scripts beyond the demo pair; user accounts /
-production security hardening.
+**Out of scope this build:** live government DB integration or write-back; user
+accounts / production security hardening. **Multiple schemes / additional Indic scripts
+beyond the demo pair are roadmap, not this build** — the engine generalizes, but we
+prove it on PDS/ONORC first.
 
 ---
 
