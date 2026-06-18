@@ -23,37 +23,49 @@ _DOB_PATTERNS = [
     re.compile(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})"),
     # DD/MM/YYYY or DD-MM-YYYY
     re.compile(r"(\d{1,2})[-/](\d{1,2})[-/](\d{4})"),
+    # DD Mon YYYY — "01 Jan 1990", "1-JAN-1990", "01.Mar.2001"
+    re.compile(r"(\d{1,2})[\s\-/\.]([A-Za-z]{3,9})[\s\-/\.](\d{4})"),
 ]
 
-# Normalise to YYYY-MM-DD
-_NAMESPACE = {"month_names": {
-    "jan": "01", "feb": "02", "mar": "03", "apr": "04",
-    "may": "05", "jun": "06", "jul": "07", "aug": "08",
-    "sep": "09", "oct": "10", "nov": "11", "dec": "12",
-}}
+_MONTH_NAMES = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+    "january": 1, "february": 2, "march": 3, "april": 4,
+    "june": 6, "july": 7, "august": 8, "september": 9,
+    "october": 10, "november": 11, "december": 12,
+}
 
 
 def _normalise_dob(raw: str) -> str | None:
     """Try to parse and normalise a date string to YYYY-MM-DD.
 
     Validates month (1-12) and day (1-31) ranges to reject OCR garbage.
+    Handles: YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, DD-Mon-YYYY, DD Mon YYYY.
     """
     s = raw.strip()
-    for pat in _DOB_PATTERNS:
+
+    # Numeric-only patterns (YYYY-MM-DD and DD/MM/YYYY)
+    for pat in _DOB_PATTERNS[:2]:
         m = pat.search(s)
         if m:
             g = m.groups()
-            if len(g) == 3:
-                # Try YYYY-MM-DD first
-                if 1900 <= int(g[0]) <= 2100:
-                    month, day = int(g[1]), int(g[2])
-                    if 1 <= month <= 12 and 1 <= day <= 31:
-                        return f"{g[0]}-{month:02d}-{day:02d}"
-                # Otherwise DD-MM-YYYY
-                if 1900 <= int(g[2]) <= 2100:
-                    day, month = int(g[0]), int(g[1])
-                    if 1 <= month <= 12 and 1 <= day <= 31:
-                        return f"{g[2]}-{month:02d}-{day:02d}"
+            if 1900 <= int(g[0]) <= 2100:
+                month, day = int(g[1]), int(g[2])
+                if 1 <= month <= 12 and 1 <= day <= 31:
+                    return f"{g[0]}-{month:02d}-{day:02d}"
+            if 1900 <= int(g[2]) <= 2100:
+                day, month = int(g[0]), int(g[1])
+                if 1 <= month <= 12 and 1 <= day <= 31:
+                    return f"{g[2]}-{month:02d}-{day:02d}"
+
+    # Month-name pattern: DD-Mon-YYYY
+    m = _DOB_PATTERNS[2].search(s)
+    if m:
+        day, mon_str, year = int(m.group(1)), m.group(2).lower()[:3], int(m.group(3))
+        month = _MONTH_NAMES.get(mon_str)
+        if month and 1 <= day <= 31 and 1900 <= year <= 2100:
+            return f"{year}-{month:02d}-{day:02d}"
+
     return None
 
 
@@ -61,24 +73,29 @@ def _normalise_dob(raw: str) -> str | None:
 # Name extraction patterns
 # ---------------------------------------------------------------------------
 
-# Labels that precede the card-holder's name in Aadhaar-style documents
+# Labels that precede the card-holder's name in Aadhaar-style documents.
+# [A-Z .] instead of [A-Z\s.] — \s matches \n and would swallow DOB/address lines.
 _AADHAAR_NAME_PATTERNS = [
-    re.compile(r"(?:Name|नाम)[:\s]*([A-Z][A-Z\s.]+[A-Z])", re.IGNORECASE),
-    re.compile(r"(?:Name of the Card Holder|Card Holder|Cardholder)[:\s]*([A-Z][A-Z\s.]+[A-Z])", re.IGNORECASE),
+    re.compile(r"(?:Name|नाम)[:\s]*([A-Z][A-Z .]{1,58}[A-Za-z])", re.IGNORECASE),
+    re.compile(r"(?:Name of the Card Holder|Card Holder|Cardholder)[:\s]*([A-Z][A-Z .]{1,58}[A-Za-z])", re.IGNORECASE),
 ]
 
-# Ration-card name markers (English labels → value; Bengali/Assamese → value)
+# Ration-card name markers.
+# Capture group limited to 60 chars of name-safe chars — stops at digits/Bengali
+# digits/punctuation that mark the start of the next field when OCR drops newlines.
+_NAME_CHARS = r"[A-Za-zঀ-৿ .']{2,60}"
 _RATION_NAME_PATTERNS = [
-    re.compile(r"Name of the Card Holder\s*:\s*(.+)", re.IGNORECASE),
-    re.compile(r"Card Holder\s*:\s*(.+)", re.IGNORECASE),
-    re.compile(r"Cardholder\s*:\s*(.+)", re.IGNORECASE),
-    re.compile(r"Name of the Father / Husband\s*:\s*(.+)", re.IGNORECASE),
-    re.compile(r"(?:Head of Family|পৰিয়ালৰ মুৰব্বী|পরিবারের প্রধান)\s*:\s*(.+)", re.IGNORECASE),
+    re.compile(r"Name of the Card Holder\s*:\s*(" + _NAME_CHARS + r")", re.IGNORECASE),
+    re.compile(r"Card Holder\s*:\s*(" + _NAME_CHARS + r")", re.IGNORECASE),
+    re.compile(r"Cardholder\s*:\s*(" + _NAME_CHARS + r")", re.IGNORECASE),
+    re.compile(r"(?:Name|নাম)[:\s]*(" + _NAME_CHARS + r")", re.IGNORECASE),
+    re.compile(r"Name of the Father / Husband\s*:\s*(" + _NAME_CHARS + r")", re.IGNORECASE),
+    re.compile(r"(?:Head of Family|পৰিয়ালৰ মুৰব্বী|পরিবারের প্রধান)\s*:\s*(" + _NAME_CHARS + r")", re.IGNORECASE),
 ]
 
-# DOB markers
+# DOB markers — [\d/\-\. A-Za-z]+ covers "01 Jan 1990", "01.01.1990", "01/01/1990"
 _DOB_PREFIX_PATTERNS = [
-    re.compile(r"(?:DOB|Date of Birth|Date Of Birth|জন্ম তারিখ|জন্ম|जन्म तिथि)[:\s]*([\d/\-A-Za-z]+)", re.IGNORECASE),
+    re.compile(r"(?:DOB|Date of Birth|Date Of Birth|জন্ম তারিখ|জন্ম|जन्म तिथि)[:\s]*([\d/\-\. A-Za-z]{6,20})", re.IGNORECASE),
     re.compile(r"(?:Year of Birth|YOB)[:\s]*(\d{4})", re.IGNORECASE),
 ]
 

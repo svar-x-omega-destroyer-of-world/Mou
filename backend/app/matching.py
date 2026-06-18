@@ -106,12 +106,19 @@ def normalise(name: str, *, drop_trailing_a: bool = True) -> str:
     return s
 
 
+def _is_latin(text: str) -> bool:
+    """Return True if every alphabetic character in text is ASCII Latin."""
+    return all(c.isascii() or not c.isalpha() for c in text)
+
+
 def name_score(aadhaar: str, ration_script: str) -> int:
     """Transliteration-aware similarity between an Aadhaar and ration name.
 
     Args:
         aadhaar: Latin-script name from the Aadhaar card.
-        ration_script: Bengali-script name from the ration card.
+        ration_script: Bengali-script name from the ration card (may also be
+                       Latin if the ration card is in English — e.g. Adivasi
+                       names on Assamese cards).
 
     Returns:
         Integer 0-100 (higher = more similar).  Threshold bands used by the
@@ -120,8 +127,9 @@ def name_score(aadhaar: str, ration_script: str) -> int:
           70–84 — transliteration-level variance (Begum/Begam, etc.), flagged.
           <70  — genuine name difference.
     """
-    # Romanise the Bengali ration name to Latin.
-    romanised = romanise(ration_script)
+    # Skip transliteration when ration name is already in Latin script —
+    # romanise() would garble ASCII text through the Bengali ITRANS scheme.
+    romanised = ration_script if _is_latin(ration_script) else romanise(ration_script)
 
     # Normalise Aadhaar name WITH trailing-'a' drop (offset for inherent vowel).
     norm_a = normalise(aadhaar, drop_trailing_a=True)
