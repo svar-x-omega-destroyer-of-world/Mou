@@ -149,7 +149,7 @@ components:
 
     Diagnosis:
       type: object
-      required: [root_cause, confidence, extracted, explanation, next_step, disclaimer]
+      required: [root_cause, confidence, extracted, explanation, next_step, disclaimer, case_id]
       properties:
         root_cause: { $ref: "#/components/schemas/RootCause" }
         confidence: { $ref: "#/components/schemas/Confidence" }
@@ -166,6 +166,10 @@ components:
           description: Whether the explanation came from the LLM or the local fallback (FR-11).
           enum: [gemini, fallback]
           example: gemini
+        case_id:
+          type: string
+          description: Anonymised case identifier, e.g. anon-0042. Populated after event recording.
+          example: "anon-0042"
 
     Case:
       type: object

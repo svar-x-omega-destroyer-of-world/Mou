@@ -98,10 +98,15 @@ class Extracted {
         rationDob: j['ration_dob'] as String?,
       );
 
-  /// Whether names are a likely mismatch (different romanized forms).
-  bool get namesLikelyMismatch =>
-      aadhaarName.trim().toLowerCase() !=
-      rationNameRomanized.trim().toLowerCase();
+  /// Whether names look like a likely mismatch.
+  ///
+  /// NOTE: The backend uses fuzzy ITRANS-aware matching (rapidfuzz
+  /// token_sort_ratio with v→b, ph→f, kh→k normalisation). A Dart-side
+  /// strict string compare would give false positives (e.g. "Rahima Begum"
+  /// vs "Rahima Begam" → mismatch, but backend may score ≥85). Rely on
+  /// the backend's root_cause field instead. This getter is kept for
+  /// informational use only and should not drive UI warnings.
+  bool get namesLikelyMismatch => false;
 }
 
 class NextStep {
@@ -124,6 +129,7 @@ class Diagnosis {
   final NextStep nextStep;
   final String disclaimer;
   final String explanationSource; // 'gemini' | 'fallback'
+  final String caseId;            // 'anon-0042' — links to /feedback
 
   const Diagnosis({
     required this.rootCause,
@@ -133,6 +139,7 @@ class Diagnosis {
     required this.nextStep,
     required this.disclaimer,
     required this.explanationSource,
+    this.caseId = '',
   });
 
   factory Diagnosis.fromJson(Map<String, dynamic> j) => Diagnosis(
@@ -145,6 +152,7 @@ class Diagnosis {
             NextStep.fromJson(j['next_step'] as Map<String, dynamic>? ?? {}),
         disclaimer: j['disclaimer'] as String? ?? '',
         explanationSource: j['explanation_source'] as String? ?? 'fallback',
+        caseId: j['case_id'] as String? ?? '',
       );
 }
 

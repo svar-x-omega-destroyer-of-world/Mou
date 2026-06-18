@@ -60,6 +60,7 @@ class Diagnosis(BaseModel):
     next_step: NextStep
     disclaimer: str
     explanation_source: ExplanationSource = ExplanationSource.fallback
+    case_id: str = ""
 
 
 class FeedbackRequest(BaseModel):

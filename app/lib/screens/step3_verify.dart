@@ -303,7 +303,10 @@ class _VerifyReadyView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ex = diagnosis.extracted;
-    final mismatch = ex.namesLikelyMismatch;
+    // Mismatch is driven by the backend's deterministic rules (root_cause),
+    // not by a Dart-side string compare which would give false positives
+    // (e.g. "Rahima Begum" vs "Rahima Begam" — backend may score ≥85).
+    final mismatch = diagnosis.rootCause == RootCause.nameMismatch;
 
     return Column(
       children: [

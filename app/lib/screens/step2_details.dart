@@ -117,14 +117,10 @@ class Step2Details extends StatelessWidget {
                       fontSize: 15, color: AppColors.onSurfaceVariant),
                 ),
                 const SizedBox(height: 12),
-                TextField(
+                TextFormField(
+                  key: ValueKey(location),
+                  initialValue: location,
                   onChanged: onLocationChanged,
-                  controller: TextEditingController.fromValue(
-                    TextEditingValue(
-                      text: location,
-                      selection: TextSelection.collapsed(offset: location.length),
-                    ),
-                  ),
                   decoration: InputDecoration(
                     hintText: 'e.g. Silchar FPS #4471',
                     prefixIcon:

@@ -19,7 +19,6 @@ from dotenv import load_dotenv
 LANGUAGE_HINTS = ["bn", "hi", "en"]
 VISION_API_URL = "https://vision.googleapis.com/v1/images:annotate"
 ENV_KEY_NAME = "GOOGLE_VISION_API_KEY"
-TESSERACT_MIN_BENGALI = 5  # fall back to Tesseract if Vision returns < this
 MIN_TEXT_LENGTH = 20  # below this → UnreadableImageError
 
 
@@ -104,11 +103,14 @@ def extract_text(image_bytes: bytes) -> str:
     # Try Vision first (primary engine)
     if api_key:
         text = ocr_google(image_bytes, api_key)
+        # Vision is a high-accuracy engine: clearing MIN_TEXT_LENGTH is
+        # sufficient evidence the document is legible. A short read (sparse,
+        # tightly-cropped, or slightly off-angle photo — or an English-only
+        # Aadhaar) is still a valid read. Blur manifests as little/no text,
+        # which MIN_TEXT_LENGTH already rejects; we do NOT impose a second,
+        # larger length gate that would false-positive on legible photos.
         if len(text.strip()) >= MIN_TEXT_LENGTH:
-            # Heuristic check: enough Bengali chars to be a real document
-            bn_count = sum(1 for ch in text if 0x0980 <= ord(ch) <= 0x09FF)
-            if bn_count >= TESSERACT_MIN_BENGALI or len(text) >= 100:
-                return text.strip()
+            return text.strip()
 
     # Fallback: Tesseract
     try:

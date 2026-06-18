@@ -34,7 +34,10 @@ _NAMESPACE = {"month_names": {
 
 
 def _normalise_dob(raw: str) -> str | None:
-    """Try to parse and normalise a date string to YYYY-MM-DD."""
+    """Try to parse and normalise a date string to YYYY-MM-DD.
+
+    Validates month (1-12) and day (1-31) ranges to reject OCR garbage.
+    """
     s = raw.strip()
     for pat in _DOB_PATTERNS:
         m = pat.search(s)
@@ -43,10 +46,14 @@ def _normalise_dob(raw: str) -> str | None:
             if len(g) == 3:
                 # Try YYYY-MM-DD first
                 if 1900 <= int(g[0]) <= 2100:
-                    return f"{g[0]}-{int(g[1]):02d}-{int(g[2]):02d}"
+                    month, day = int(g[1]), int(g[2])
+                    if 1 <= month <= 12 and 1 <= day <= 31:
+                        return f"{g[0]}-{month:02d}-{day:02d}"
                 # Otherwise DD-MM-YYYY
                 if 1900 <= int(g[2]) <= 2100:
-                    return f"{g[2]}-{int(g[1]):02d}-{int(g[0]):02d}"
+                    day, month = int(g[0]), int(g[1])
+                    if 1 <= month <= 12 and 1 <= day <= 31:
+                        return f"{g[2]}-{month:02d}-{day:02d}"
     return None
 
 
@@ -63,6 +70,8 @@ _AADHAAR_NAME_PATTERNS = [
 # Ration-card name markers (English labels → value; Bengali/Assamese → value)
 _RATION_NAME_PATTERNS = [
     re.compile(r"Name of the Card Holder\s*:\s*(.+)", re.IGNORECASE),
+    re.compile(r"Card Holder\s*:\s*(.+)", re.IGNORECASE),
+    re.compile(r"Cardholder\s*:\s*(.+)", re.IGNORECASE),
     re.compile(r"Name of the Father / Husband\s*:\s*(.+)", re.IGNORECASE),
     re.compile(r"(?:Head of Family|পৰিয়ালৰ মুৰব্বী|পরিবারের প্রধান)\s*:\s*(.+)", re.IGNORECASE),
 ]

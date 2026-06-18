@@ -235,12 +235,23 @@ class _Step4ResultsState extends State<Step4Results> {
   }
 
   Future<void> _submitFeedback(Diagnosis d) async {
+    if (d.caseId.isEmpty) {
+      if (mounted) {
+        setState(() => _loadingFeedback = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Feedback is unavailable — the diagnosis event was not recorded.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+      return;
+    }
     setState(() => _loadingFeedback = true);
     try {
-      // Use a synthetic case_id since the API doesn't return it yet
-      // (it's stored server-side — the user just flags the root cause)
       await MouApi.instance.submitFeedback(
-        caseId: 'anon-latest',
+        caseId: d.caseId,
         rootCause: d.rootCause,
         comment: _feedbackController.text.trim().isNotEmpty
             ? _feedbackController.text.trim()

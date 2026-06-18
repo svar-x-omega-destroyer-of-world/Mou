@@ -80,10 +80,6 @@ def init_db() -> None:
         cur.executescript(SCHEMA_SQL)
 
 
-def _next_case_id(cur: sqlite3.Cursor) -> str:
-    cur.execute("SELECT COALESCE(MAX(id), 0) + 1 FROM events")
-    return f"anon-{cur.fetchone()[0]:04d}"
-
 
 # ── Public API ──────────────────────────────────────────────────────────────
 
@@ -93,26 +89,34 @@ def record_event(
     fps_location: Optional[str],
     document_pattern: Optional[str],
 ) -> str:
-    """Persist one anonymised event. Returns the case_id (e.g. anon-0192).
+    """Persist one anonymised event. Returns the case_id (e.g. anon-0001).
+
+    Uses SQLite autoincrement for thread-safe ID generation: INSERT first,
+    then reads lastrowid to build the case_id. No MAX race.
 
     No name, Aadhaar number, or other PII is stored (SRS §7).
     """
     init_db()
     with _cursor() as cur:
-        case_id = _next_case_id(cur)
+        now = datetime.now(timezone.utc).isoformat()
+        # Insert with a placeholder case_id; id autoincrements safely
         cur.execute(
             """INSERT INTO events (case_id, root_cause, fps_location,
                                    document_pattern, confidence, created_at)
                VALUES (?, ?, ?, ?, ?, ?)""",
             (
-                case_id,
+                "",  # placeholder — updated below from lastrowid
                 root_cause.value,
                 fps_location,
                 document_pattern,
                 confidence.value,
-                datetime.now(timezone.utc).isoformat(),
+                now,
             ),
         )
+        case_id = f"anon-{cur.lastrowid:04d}"
+        # Update the row with the real case_id
+        cur.execute("UPDATE events SET case_id = ? WHERE id = ?",
+                    (case_id, cur.lastrowid))
         return case_id
 
 

@@ -11,6 +11,7 @@ Nothing here decides eligibility (FR-10, FR-18). The dashboard is read-only.
 """
 from __future__ import annotations
 
+import asyncio
 from typing import Optional
 
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
@@ -127,8 +128,11 @@ async def diagnose(
         raise HTTPException(400, detail=f"Failed to read upload: {exc}")
 
     try:
-        aadhaar_text = extract_text(aadhaar_bytes)
-        ration_text = extract_text(ration_bytes)
+        # Run both OCR calls concurrently (asyncio.to_thread for sync code)
+        aadhaar_text, ration_text = await asyncio.gather(
+            asyncio.to_thread(extract_text, aadhaar_bytes),
+            asyncio.to_thread(extract_text, ration_bytes),
+        )
     except UnreadableImageError as exc:
         raise HTTPException(422, detail={"error": "unreadable_image", "message": str(exc)})
 
@@ -158,14 +162,14 @@ async def diagnose(
     # 6. Anonymised event record (FR-12)
     pattern = _document_pattern(cause, ns, ds, extracted)
     try:
-        record_event(
+        case_id = record_event(
             root_cause=cause,
             confidence=confidence,
             fps_location=fps_location,
             document_pattern=pattern,
         )
     except Exception:
-        pass  # event recording must never break the diagnosis
+        case_id = ""  # event recording must never break the diagnosis
 
     return Diagnosis(
         root_cause=cause,
@@ -175,6 +179,7 @@ async def diagnose(
         next_step=_next_step(cause),
         disclaimer=_DISCLAIMER,
         explanation_source=explanation_source,
+        case_id=case_id,
     )
 
 

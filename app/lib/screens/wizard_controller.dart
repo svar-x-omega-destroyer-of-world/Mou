@@ -33,6 +33,11 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
 
   void _nextStep() {
     if (_currentStep < 4) {
+      // Guard: don't advance to step 3 (verification/diagnosis) without
+      // both images — prevents force-unwrap crash (wizard_controller.dart:157).
+      if (_currentStep + 1 == 3 && (aadhaarImage == null || rationCardImage == null)) {
+        return;
+      }
       setState(() => _currentStep++);
     }
   }

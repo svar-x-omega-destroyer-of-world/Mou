@@ -11,5 +11,6 @@
   "explanation": "Your name appears slightly differently on your two documents. On your Aadhaar it reads 'Rahima Begum', but your ration card spells it 'Rahima Begam' (রহিমা বেগম). This small spelling difference between the two records is a common reason a ration is silently blocked at the shop, because the systems cannot match the two names automatically.",
   "next_step": { "office": "Circle Office", "form": "RC Correction" },
   "disclaimer": "Likely cause — verify against your own documents before acting. This is not an eligibility decision.",
-  "explanation_source": "gemini"
+  "explanation_source": "gemini",
+  "case_id": "anon-0042"
 }
