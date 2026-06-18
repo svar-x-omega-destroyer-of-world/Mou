@@ -85,6 +85,46 @@ def ocr_tesseract(image_bytes: bytes) -> str:
 # Public API
 # ---------------------------------------------------------------------------
 
+def _looks_like_document(text: str) -> bool:
+    """Lightweight heuristics: does extracted text look document-like?
+
+    Guards against accepting clearly non-document photos (signboards, random
+    text) that happen to clear the MIN_TEXT_LENGTH floor.
+    """
+    upper = text.upper()
+
+    # Document labels (name, date, card, ID markers)
+    if any(kw in upper for kw in ("AADHAAR", "RATION", "UIDAI", "DOB",
+                                   "DATE OF BIRTH", "NAME", "CARD",
+                                   "GOVERNMENT", "भारत", "आधार")):
+        return True
+
+    # Aadhaar-like number patterns (XXXX XXXX XXXX)
+    import re
+    if re.search(r"\b\d{4}\s+\d{4}\s+\d{4}\b", text):
+        return True
+
+    # Date patterns (DD/MM/YYYY, YYYY-MM-DD, etc.)
+    if re.search(r"\b\d{2}[/-]\d{2}[/-]\d{4}\b", text):
+        return True
+
+    # Indian state/district names common on documents
+    if any(place in upper for place in
+           ("ASSAM", "WEST BENGAL", "TRIPURA", "NAGALAND", "MANIPUR",
+            "MIZORAM", "MEGHALAYA", "ARUNACHAL", "SIKKIM", "JHARKHAND",
+            "ODISHA", "BIHAR", "SILCHAR", "GUWAHATI", "DELHI")):
+        return True
+
+    # Indian-script characters (Bengali, Devanagari) — strong document signal
+    # for the target region (Assam/Barak Valley, West Bengal, Tripura).
+    bengali = sum(1 for ch in text if 0x0980 <= ord(ch) <= 0x09FF)
+    devanagari = sum(1 for ch in text if 0x0900 <= ord(ch) <= 0x097F)
+    if bengali + devanagari >= 5:
+        return True
+
+    return False
+
+
 def extract_text(image_bytes: bytes) -> str:
     """Extract text from a document photo, with fallback chain.
 
@@ -109,8 +149,15 @@ def extract_text(image_bytes: bytes) -> str:
         # Aadhaar) is still a valid read. Blur manifests as little/no text,
         # which MIN_TEXT_LENGTH already rejects; we do NOT impose a second,
         # larger length gate that would false-positive on legible photos.
-        if len(text.strip()) >= MIN_TEXT_LENGTH:
-            return text.strip()
+        stripped = text.strip()
+        if len(stripped) >= MIN_TEXT_LENGTH:
+            # Lightweight content check: reject obviously non-document text
+            # (e.g. signboards) that happens to clear the length floor.
+            if len(stripped) >= 80 or _looks_like_document(stripped):
+                return stripped
+            # Short reads (20–79 chars) without document markers may be
+            # non-document photos; let them fall through to Tesseract
+            # which may recover more text.
 
     # Fallback: Tesseract
     try:

@@ -33,9 +33,17 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
 
   void _nextStep() {
     if (_currentStep < 4) {
-      // Guard: don't advance to step 3 (verification/diagnosis) without
-      // both images — prevents force-unwrap crash (wizard_controller.dart:157).
-      if (_currentStep + 1 == 3 && (aadhaarImage == null || rationCardImage == null)) {
+      // Guard: don't advance past step 1 without both images — prevents the
+      // force-unwrap crash in step 3 (aadhaarImage! at wizard_controller.dart:162).
+      if (_currentStep == 1 && (aadhaarImage == null || rationCardImage == null)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please take both document photos before continuing.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
         return;
       }
       setState(() => _currentStep++);

@@ -51,7 +51,7 @@ def _cursor() -> Generator[sqlite3.Cursor, None, None]:
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS events (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    case_id         TEXT    NOT NULL UNIQUE,
+    case_id         TEXT    NOT NULL,
     root_cause      TEXT    NOT NULL,
     fps_location    TEXT,
     document_pattern TEXT,
@@ -99,13 +99,14 @@ def record_event(
     init_db()
     with _cursor() as cur:
         now = datetime.now(timezone.utc).isoformat()
-        # Insert with a placeholder case_id; id autoincrements safely
+        # Insert with a NULL-ish placeholder; id autoincrements safely.
+        # case_id is NOT UNIQUE (concurrent '' placeholders would collide).
         cur.execute(
             """INSERT INTO events (case_id, root_cause, fps_location,
                                    document_pattern, confidence, created_at)
                VALUES (?, ?, ?, ?, ?, ?)""",
             (
-                "",  # placeholder — updated below from lastrowid
+                "",  # placeholder — overwritten below from lastrowid
                 root_cause.value,
                 fps_location,
                 document_pattern,
@@ -114,7 +115,6 @@ def record_event(
             ),
         )
         case_id = f"anon-{cur.lastrowid:04d}"
-        # Update the row with the real case_id
         cur.execute("UPDATE events SET case_id = ? WHERE id = ?",
                     (case_id, cur.lastrowid))
         return case_id
