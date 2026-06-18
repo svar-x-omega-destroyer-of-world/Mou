@@ -21,6 +21,11 @@ dashboard/.vercel/
 backend/spikes/samples/*
 !backend/spikes/samples/.gitkeep
 
+# --- SQLite databases (seeded at runtime) ---
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
+
 # --- OS ---
 .DS_Store
 

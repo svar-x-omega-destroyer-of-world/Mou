@@ -118,7 +118,6 @@ class Step2Details extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
-                  key: ValueKey(location),
                   initialValue: location,
                   onChanged: onLocationChanged,
                   decoration: InputDecoration(

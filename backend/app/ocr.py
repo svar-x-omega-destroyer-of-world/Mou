@@ -151,13 +151,7 @@ def extract_text(image_bytes: bytes) -> str:
         # larger length gate that would false-positive on legible photos.
         stripped = text.strip()
         if len(stripped) >= MIN_TEXT_LENGTH:
-            # Lightweight content check: reject obviously non-document text
-            # (e.g. signboards) that happens to clear the length floor.
-            if len(stripped) >= 80 or _looks_like_document(stripped):
-                return stripped
-            # Short reads (20–79 chars) without document markers may be
-            # non-document photos; let them fall through to Tesseract
-            # which may recover more text.
+            return stripped
 
     # Fallback: Tesseract
     try:

@@ -23,11 +23,10 @@ import 'package:image_picker/image_picker.dart';
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-/// Change this to your machine's LAN IP when running on a physical device.
-/// e.g. 'http://192.168.1.42:8000'
-/// For Android emulator: 'http://10.0.2.2:8000'
-/// For iOS simulator / Mac desktop: 'http://localhost:8000'
-const String _kDefaultBaseUrl = 'http://192.168.0.144:8000';
+/// Physical device over LAN → set to your machine's IP, e.g. 'http://192.168.1.42:8000'
+/// Android emulator         → 'http://10.0.2.2:8000'
+/// iOS simulator / desktop  → 'http://localhost:8000'  (default)
+const String _kDefaultBaseUrl = 'http://localhost:8000';
 
 // ── Enums (mirroring API contract §5) ───────────────────────────────────────
 
