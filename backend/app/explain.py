@@ -8,9 +8,17 @@ or errors, ``explain()`` returns a pre-written fallback string and sets
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
+
 from app.fallbacks import get_fallback
+
+# Load .env from backend/ directory (same as ocr.py does for Vision key)
+_env_path = Path(__file__).resolve().parent.parent / ".env"
+if _env_path.exists():
+    load_dotenv(_env_path)
 from app.schemas import Confidence, ExplanationSource, Extracted, RootCause
 
 GEMINI_MODEL = "models/gemini-2.5-flash-preview-04-17"  # latest free-tier stable

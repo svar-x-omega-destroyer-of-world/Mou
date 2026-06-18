@@ -6,6 +6,7 @@ httpx==0.28.1            # FastAPI TestClient + Google Vision REST call (Risk R-
 rapidfuzz==3.14.5       # fuzzy name matching (Phase 2)
 indic-transliteration==2.3.82  # Bengali -> Latin romanisation (Phase 2)
 google-generativeai==0.8.4  # Gemini explanation layer (Phase 2)
+python-dotenv==1.2.2       # load .env for local dev (Vision + Gemini keys)
 # --- added in later phases ---
 # google-cloud-vision==3.12.1  # not needed: Vision is called over REST with an API key
 # sqlalchemy / psycopg       # event store (Phase 3)
