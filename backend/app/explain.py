@@ -18,7 +18,7 @@ from app.fallbacks import get_fallback
 # Load .env from backend/ directory (same as ocr.py does for Vision key)
 _env_path = Path(__file__).resolve().parent.parent / ".env"
 if _env_path.exists():
-    load_dotenv(_env_path)
+    load_dotenv(_env_path, override=True)
 from app.schemas import Confidence, ExplanationSource, Extracted, RootCause
 
 GEMINI_MODEL = "gemini-2.5-flash"
@@ -95,7 +95,8 @@ def _try_gemini(
                 system_instruction=_SYSTEM_INSTRUCTION,
             ),
         )
-        return resp.text.strip() if resp.text else None
+        t = resp.text
+        return t.strip() if t else None
     except Exception:
         return None
 
