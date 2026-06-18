@@ -23,10 +23,10 @@ import 'package:image_picker/image_picker.dart';
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-/// Physical device over LAN → set to your machine's IP, e.g. 'http://192.168.1.42:8000'
-/// Android emulator         → 'http://10.0.2.2:8000'
-/// iOS simulator / desktop  → 'http://localhost:8000'  (default)
-const String _kDefaultBaseUrl = 'http://localhost:8000';
+/// Production backend on Railway — works from any device.
+/// For local dev override in main.dart: MouApi.baseUrl = 'http://localhost:8000';
+/// Android emulator: 'http://10.0.2.2:8000'
+const String _kDefaultBaseUrl = 'https://mou-backend-production.up.railway.app';
 
 // ── Enums (mirroring API contract §5) ───────────────────────────────────────
 
