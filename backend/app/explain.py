@@ -21,7 +21,7 @@ if _env_path.exists():
     load_dotenv(_env_path)
 from app.schemas import Confidence, ExplanationSource, Extracted, RootCause
 
-GEMINI_MODEL = "models/gemini-2.5-flash-preview-04-17"  # latest free-tier stable
+GEMINI_MODEL = "gemini-2.5-flash"
 GEMINI_API_KEY_ENV = "GEMINI_API_KEY"
 
 # ── Instruct template ───────────────────────────────────────────────────────
@@ -75,13 +75,10 @@ def _try_gemini(
         return None  # no key configured → fallback
 
     try:
-        import google.generativeai as genai
+        from google import genai
+        from google.genai import types
 
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(
-            GEMINI_MODEL,
-            system_instruction=_SYSTEM_INSTRUCTION,
-        )
+        client = genai.Client(api_key=api_key)
         prompt = _EXPLAIN_PROMPT.format(
             root_cause=root_cause,
             confidence=confidence,
@@ -91,7 +88,13 @@ def _try_gemini(
             symptom=symptom,
             fps_location=fps_location or "not provided",
         )
-        resp = model.generate_content(prompt)
+        resp = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=_SYSTEM_INSTRUCTION,
+            ),
+        )
         return resp.text.strip() if resp.text else None
     except Exception:
         return None
