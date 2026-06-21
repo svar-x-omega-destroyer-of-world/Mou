@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../api/mou_api.dart';
+import '../l10n/strings.dart';
 import '../theme.dart';
 
 /// Step 3 — fires the real POST /diagnose, then shows extracted fields
@@ -88,25 +89,25 @@ class _Step3VerifyState extends State<Step3Verify> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppText.of(context);
     switch (_state) {
       case _VerifyState.loading:
         return _LoadingView();
       case _VerifyState.unreadable:
         return _ErrorView(
           icon: Icons.image_not_supported_outlined,
-          title: 'Document unreadable',
-          message: _errorMessage ??
-              'The photo was too blurry. Please retake with better lighting.',
-          actionLabel: '← Retake Photos',
+          title: t.docUnreadableTitle,
+          message: _errorMessage ?? t.docUnreadableMsg,
+          actionLabel: t.retakePhotos,
           onAction: widget.onBack,
           isRetake: true,
         );
       case _VerifyState.error:
         return _ErrorView(
           icon: Icons.cloud_off_outlined,
-          title: 'Could not reach server',
-          message: _errorMessage ?? 'Network error.',
-          actionLabel: 'Retry',
+          title: t.serverErrorTitle,
+          message: _errorMessage ?? t.networkError,
+          actionLabel: t.retry,
           onAction: _runDiagnosis,
           isRetake: false,
         );
@@ -133,12 +134,8 @@ class _LoadingViewState extends State<_LoadingView>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   int _phase = 0;
-  static const _phases = [
-    'Reading your documents…',
-    'Comparing names across scripts…',
-    'Applying diagnosis rules…',
-    'Preparing your result…',
-  ];
+  // Number of cycling status phrases (see AppStrings.verifyPhases).
+  static const _phaseCount = 4;
 
   @override
   void initState() {
@@ -150,7 +147,7 @@ class _LoadingViewState extends State<_LoadingView>
     Future.doWhile(() async {
       await Future.delayed(const Duration(milliseconds: 2500));
       if (!mounted) return false;
-      setState(() => _phase = (_phase + 1) % _phases.length);
+      setState(() => _phase = (_phase + 1) % _phaseCount);
       return mounted;
     });
   }
@@ -163,6 +160,7 @@ class _LoadingViewState extends State<_LoadingView>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppText.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40.0),
@@ -179,7 +177,7 @@ class _LoadingViewState extends State<_LoadingView>
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 400),
               child: Text(
-                _phases[_phase],
+                t.verifyPhases[_phase],
                 key: ValueKey(_phase),
                 style: const TextStyle(
                     fontSize: 24,
@@ -189,10 +187,10 @@ class _LoadingViewState extends State<_LoadingView>
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Using OCR and transliteration-aware matching to compare your Aadhaar and ration card records.',
-              style:
-                  TextStyle(fontSize: 16, color: AppColors.onSurfaceVariant),
+            Text(
+              t.loadingBody,
+              style: const TextStyle(
+                  fontSize: 16, color: AppColors.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
@@ -202,17 +200,19 @@ class _LoadingViewState extends State<_LoadingView>
                 color: AppColors.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.lock_outline,
+                  const Icon(Icons.lock_outline,
                       size: 18, color: AppColors.secondary),
-                  SizedBox(width: 8),
-                  Text(
-                    'Your documents are processed securely and not stored.',
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.onSurfaceVariant),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      t.securityNote,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.onSurfaceVariant),
+                    ),
                   ),
                 ],
               ),
@@ -302,6 +302,7 @@ class _VerifyReadyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppText.of(context);
     final ex = diagnosis.extracted;
     // Mismatch is driven by the backend's deterministic rules (root_cause),
     // not by a Dart-side string compare which would give false positives
@@ -316,42 +317,42 @@ class _VerifyReadyView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Verify extracted details',
-                  style: TextStyle(
+                Text(
+                  t.verifyTitle,
+                  style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
                       color: AppColors.primary),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'We read the text from your documents. Please check these match what is printed on your cards.',
-                  style: TextStyle(
+                Text(
+                  t.verifySubtitle,
+                  style: const TextStyle(
                       fontSize: 15, color: AppColors.onSurfaceVariant),
                 ),
                 const SizedBox(height: 24),
 
                 // ── Name comparison card ───────────────────────────────────
                 _CompareCard(
-                  label: 'NAME ON AADHAAR',
+                  label: t.nameOnAadhaar,
                   value: ex.aadhaarName.isNotEmpty
                       ? ex.aadhaarName
-                      : 'Not extracted',
+                      : t.notExtracted,
                   isOk: !mismatch,
                   icon: Icons.badge_outlined,
                 ),
                 const SizedBox(height: 12),
                 _CompareCard(
-                  label: 'NAME ON RATION CARD (Romanised)',
+                  label: t.nameOnRation,
                   value: ex.rationNameRomanized.isNotEmpty
                       ? ex.rationNameRomanized
-                      : 'Not extracted',
+                      : t.notExtracted,
                   isOk: !mismatch,
                   icon: Icons.receipt_long_outlined,
                 ),
                 if (ex.rationNameScript.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  _ScriptRow(label: 'Script', value: ex.rationNameScript),
+                  _ScriptRow(label: t.scriptLabel, value: ex.rationNameScript),
                 ],
 
                 // ── Mismatch banner ───────────────────────────────────────
@@ -363,8 +364,8 @@ class _VerifyReadyView extends StatelessWidget {
                 // ── DOB comparison ────────────────────────────────────────
                 if (ex.aadhaarDob != null || ex.rationDob != null) ...[
                   const SizedBox(height: 20),
-                  const Text('DATE OF BIRTH',
-                      style: TextStyle(
+                  Text(t.dobLabel,
+                      style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1.1,
@@ -374,7 +375,7 @@ class _VerifyReadyView extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _DobChip(
-                            label: 'Aadhaar',
+                            label: t.aadhaarShort,
                             value: ex.aadhaarDob ?? '—'),
                       ),
                       const SizedBox(width: 10),
@@ -383,7 +384,7 @@ class _VerifyReadyView extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: _DobChip(
-                            label: 'Ration',
+                            label: t.rationShort,
                             value: ex.rationDob ?? '—'),
                       ),
                     ],
@@ -446,7 +447,7 @@ class _VerifyReadyView extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: onBack,
-                      child: const Text('Go Back'),
+                      child: Text(t.goBack),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -455,7 +456,7 @@ class _VerifyReadyView extends StatelessWidget {
                       onPressed: onNext,
                       style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.secondary),
-                      child: const Text('See Results'),
+                      child: Text(t.seeResults),
                     ),
                   ),
                 ],
@@ -576,14 +577,15 @@ class _MismatchBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 22),
-          SizedBox(width: 10),
+          const Icon(Icons.warning_amber_rounded,
+              color: AppColors.error, size: 22),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Name mismatch detected between the two cards. This is a common cause of silent exclusion.',
-              style: TextStyle(
+              AppText.of(context).mismatchBanner,
+              style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.onErrorContainer),
@@ -640,24 +642,21 @@ class _ConfidenceBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     Color bg;
     Color fg;
-    String label;
     switch (confidence) {
       case Confidence.high:
         bg = const Color(0xFFD4EDDA);
         fg = const Color(0xFF155724);
-        label = '● High confidence';
         break;
       case Confidence.medium:
         bg = const Color(0xFFFFF3CD);
         fg = const Color(0xFF856404);
-        label = '● Medium confidence';
         break;
       case Confidence.low:
         bg = const Color(0xFFF8D7DA);
         fg = const Color(0xFF721C24);
-        label = '● Low confidence';
         break;
     }
+    final label = AppText.of(context).confidenceBadge(confidence);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(

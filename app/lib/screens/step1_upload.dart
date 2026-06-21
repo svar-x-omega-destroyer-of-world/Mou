@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../l10n/strings.dart';
 import '../theme.dart';
 
 class Step1Upload extends StatelessWidget {
@@ -21,6 +22,7 @@ class Step1Upload extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppText.of(context);
     final bool canContinue = aadhaarImage != null && rationCardImage != null;
 
     return SingleChildScrollView(
@@ -29,33 +31,33 @@ class Step1Upload extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(height: 8),
-          const Text(
-            'Upload Your Documents',
-            style: TextStyle(
+          Text(
+            t.uploadTitle,
+            style: const TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
                 color: AppColors.primary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 10),
-          const Text(
-            'Take a clear photo of each card.\nBoth are needed to check for mismatches.',
+          Text(
+            t.uploadSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 17, color: AppColors.onSurfaceVariant),
+            style: const TextStyle(fontSize: 17, color: AppColors.onSurfaceVariant),
           ),
           const SizedBox(height: 32),
 
           _PhotoCard(
-            title: 'Aadhaar Card',
-            subtitle: 'Government ID / Aadhaar',
+            title: t.aadhaarCard,
+            subtitle: t.aadhaarCardSub,
             icon: Icons.badge_outlined,
             picked: aadhaarImage,
             onPick: () => _pickImage(context, onAadhaarPicked),
           ),
           const SizedBox(height: 16),
           _PhotoCard(
-            title: 'Ration Card',
-            subtitle: 'PDS / ONORC ration card',
+            title: t.rationCard,
+            subtitle: t.rationCardSub,
             icon: Icons.receipt_long_outlined,
             picked: rationCardImage,
             onPick: () => _pickImage(context, onRationCardPicked),
@@ -73,15 +75,15 @@ class Step1Upload extends StatelessWidget {
                 border: Border.all(
                     color: AppColors.outlineVariant, width: 1.5),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.tips_and_updates_outlined,
+                  const Icon(Icons.tips_and_updates_outlined,
                       color: AppColors.secondary, size: 22),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Tip: Hold your card flat with good lighting. Avoid shadows and glare.',
-                      style: TextStyle(
+                      t.uploadTip,
+                      style: const TextStyle(
                           fontSize: 14,
                           color: AppColors.onSurfaceVariant),
                     ),
@@ -95,7 +97,7 @@ class Step1Upload extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: canContinue ? onNext : null,
             icon: const Icon(Icons.arrow_forward),
-            label: const Text('Continue to Step 2'),
+            label: Text(t.continueLabel),
             style: ElevatedButton.styleFrom(
               backgroundColor:
                   canContinue ? AppColors.secondary : AppColors.surfaceContainerHigh,
@@ -105,11 +107,11 @@ class Step1Upload extends StatelessWidget {
           ),
 
           if (!canContinue)
-            const Padding(
-              padding: EdgeInsets.only(top: 10),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
               child: Text(
-                'Upload both documents to continue.',
-                style: TextStyle(
+                t.uploadBothHint,
+                style: const TextStyle(
                     color: AppColors.onSurfaceVariant, fontSize: 14),
               ),
             ),
@@ -122,16 +124,17 @@ class Step1Upload extends StatelessWidget {
 
   Future<void> _pickImage(
       BuildContext context, ValueChanged<XFile?> onPicked) async {
+    final t = AppText.of(context);
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Choose photo source',
-                  style: TextStyle(
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(t.choosePhotoSource,
+                  style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                       color: AppColors.primary)),
@@ -139,15 +142,14 @@ class Step1Upload extends StatelessWidget {
             ListTile(
               leading:
                   const Icon(Icons.photo_camera, color: AppColors.primary),
-              title: const Text('Take a photo',
-                  style: TextStyle(fontSize: 17)),
+              title: Text(t.takeAPhoto, style: const TextStyle(fontSize: 17)),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library,
                   color: AppColors.primary),
-              title: const Text('Choose from gallery',
-                  style: TextStyle(fontSize: 17)),
+              title:
+                  Text(t.chooseFromGallery, style: const TextStyle(fontSize: 17)),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
             const SizedBox(height: 8),
@@ -242,13 +244,13 @@ class _EmptySlot extends StatelessWidget {
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(30),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.photo_camera, size: 20, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Take Photo',
-                    style: TextStyle(
+                const Icon(Icons.photo_camera, size: 20, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(AppText.of(context).takePhoto,
+                    style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.white)),
@@ -312,13 +314,13 @@ class _PickedPreview extends StatelessWidget {
                 color: Colors.black.withValues(alpha: 0.65),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.replay, color: Colors.white, size: 15),
-                  SizedBox(width: 4),
-                  Text('Retake',
-                      style: TextStyle(
+                  const Icon(Icons.replay, color: Colors.white, size: 15),
+                  const SizedBox(width: 4),
+                  Text(AppText.of(context).retake,
+                      style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13,
                           fontWeight: FontWeight.w600)),

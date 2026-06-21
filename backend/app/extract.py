@@ -99,6 +99,35 @@ _DOB_PREFIX_PATTERNS = [
     re.compile(r"(?:Year of Birth|YOB)[:\s]*(\d{4})", re.IGNORECASE),
 ]
 
+# Field labels of the *next* field that can bleed into a name capture when OCR
+# drops the newline between the name and the field below it (e.g. Vision
+# returning "Name Dino Saren Date Of Birth 01/01/1990" on one line).  We cut the
+# captured name at the first occurrence of any of these.  \b anchors keep us from
+# clipping legitimate name tokens that merely contain these letters.
+_TRAILING_LABEL_RE = re.compile(
+    r"\b(?:"
+    r"date\s*of\s*birth|d\.?\s*o\.?\s*b\.?|year\s*of\s*birth|y\.?\s*o\.?\s*b\.?|"
+    r"date\s*of\s*issue|"
+    r"male|female|transgender|"
+    r"father|husband|mother|wife|guardian|"
+    r"s/o|d/o|w/o|c/o|"
+    r"address|government\s*of\s*india|জন্ম\s*তারিখ|জন্ম|জন্ম\s*সাল"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+def _strip_trailing_labels(name: str) -> str:
+    """Cut a captured name at the first field-label keyword that bleeds in.
+
+    Defends against OCR runs where the name and the following field label end up
+    on the same line, so the greedy name capture swallows e.g. "Date Of Birth".
+    """
+    m = _TRAILING_LABEL_RE.search(name)
+    if m:
+        name = name[: m.start()]
+    return re.sub(r"\s+", " ", name).strip(" .,-")
+
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -114,7 +143,7 @@ def extract_aadhaar(text: str) -> tuple[str | None, str | None]:
     for pat in _AADHAAR_NAME_PATTERNS:
         m = pat.search(text)
         if m:
-            candidate = m.group(1).strip().title()
+            candidate = _strip_trailing_labels(m.group(1)).title()
             # Filter out short / non-name matches
             if len(candidate.split()) >= 1 and len(candidate) >= 3:
                 name = candidate
@@ -145,9 +174,8 @@ def extract_ration(text: str) -> tuple[str | None, str | None]:
     for pat in _RATION_NAME_PATTERNS:
         m = pat.search(text)
         if m:
-            candidate = m.group(1).strip()
-            # Remove trailing noise
-            candidate = re.sub(r"\s+", " ", candidate)
+            # Remove trailing field-label bleed and collapse whitespace.
+            candidate = _strip_trailing_labels(m.group(1))
             if len(candidate) >= 3:
                 name = candidate
                 break

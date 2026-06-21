@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../api/mou_api.dart';
+import '../l10n/strings.dart';
 import '../theme.dart';
+import 'welcome.dart';
+import 'language_select.dart';
 import 'step1_upload.dart';
 import 'step2_details.dart';
 import 'step3_verify.dart';
 import 'step4_results.dart';
 
+/// Flow:
+///   0 Welcome → 1 Language → 2 Upload → 3 Details → 4 Verify → 5 Results
+///
+/// Language is chosen up front (step 1) so every later screen renders in the
+/// selected language via [AppText].  Steps 1–5 form the progress bar; the
+/// welcome screen (0) is a plain landing page with no app bar.
 class WizardControllerScreen extends StatefulWidget {
   const WizardControllerScreen({super.key});
 
@@ -15,53 +24,66 @@ class WizardControllerScreen extends StatefulWidget {
 }
 
 class _WizardControllerScreenState extends State<WizardControllerScreen> {
-  int _currentStep = 1; // 1–4
+  static const int _welcome = 0;
+  static const int _language = 1;
+  static const int _upload = 2;
+  static const int _details = 3;
+  static const int _verify = 4;
+  static const int _results = 5;
+  static const int _lastStep = _results;
+  // Number of numbered steps shown in the "Step X of N" counter / progress bar.
+  static const int _numberedSteps = 5;
 
-  // ── Step 1: Document images ───────────────────────────────────────────────
+  int _currentStep = _welcome;
+
+  // ── Step 1: Preferred language (drives all UI copy) ───────────────────────
+  String? selectedLanguage;
+
+  // ── Step 2: Document images ───────────────────────────────────────────────
   XFile? aadhaarImage;
   XFile? rationCardImage;
 
-  // ── Step 2: Intake details ────────────────────────────────────────────────
-  String? selectedLanguage;
+  // ── Step 3: Intake details ────────────────────────────────────────────────
   Symptom? selectedSymptom;
   String location = '';
   bool isAssisted = false; // FR-2 proxy mode
 
-  // ── Step 3 / 4: Diagnosis result ──────────────────────────────────────────
+  // ── Step 4 / 5: Diagnosis result ──────────────────────────────────────────
   Diagnosis? diagnosis;
   String? diagnosisError;
 
   void _nextStep() {
-    if (_currentStep < 4) {
-      // Guard: don't advance past step 1 without both images — prevents the
-      // force-unwrap crash in step 3 (aadhaarImage! at wizard_controller.dart:162).
-      if (_currentStep == 1 && (aadhaarImage == null || rationCardImage == null)) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please take both document photos before continuing.'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
-        return;
+    if (_currentStep >= _lastStep) return;
+
+    // Guard: don't advance past upload without both images — prevents the
+    // force-unwrap crash in the verify step (aadhaarImage!).
+    if (_currentStep == _upload &&
+        (aadhaarImage == null || rationCardImage == null)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppStrings(selectedLanguage ?? 'en').bothPhotosNeeded),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
-      setState(() => _currentStep++);
+      return;
     }
+    setState(() => _currentStep++);
   }
 
   void _previousStep() {
-    if (_currentStep > 1) {
+    if (_currentStep > _welcome) {
       setState(() => _currentStep--);
     }
   }
 
   void _restart() {
     setState(() {
-      _currentStep = 1;
+      _currentStep = _welcome;
+      selectedLanguage = null;
       aadhaarImage = null;
       rationCardImage = null;
-      selectedLanguage = null;
       selectedSymptom = null;
       location = '';
       isAssisted = false;
@@ -72,11 +94,14 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: _buildAppBar(),
-      body: SafeArea(
-        child: _buildCurrentStep(),
+    // Publish the selected language to the whole subtree.  Until the user picks
+    // one (welcome + language steps) we default to English.
+    return AppText(
+      lang: selectedLanguage ?? 'en',
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: _currentStep == _welcome ? null : _buildAppBar(),
+        body: SafeArea(child: _buildCurrentStep()),
       ),
     );
   }
@@ -89,25 +114,32 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
       shape: const Border(
         bottom: BorderSide(color: AppColors.primary, width: 2),
       ),
-      leading: _currentStep > 1 && _currentStep < 4
+      leading: _currentStep > _language && _currentStep < _results
           ? IconButton(
               icon: const Icon(Icons.arrow_back,
                   color: AppColors.primary, size: 28),
               onPressed: _previousStep,
             )
-          : _currentStep == 4
+          : _currentStep == _results
               ? IconButton(
                   icon: const Icon(Icons.home,
                       color: AppColors.primary, size: 28),
                   onPressed: _restart,
                 )
-              : const SizedBox(width: 56),
-      title: Text(
-        _stepTitle(),
-        style: const TextStyle(
-          color: AppColors.primary,
-          fontSize: 20,
-          fontWeight: FontWeight.w800,
+              : IconButton(
+                  // From the language step, back returns to the welcome screen.
+                  icon: const Icon(Icons.arrow_back,
+                      color: AppColors.primary, size: 28),
+                  onPressed: _previousStep,
+                ),
+      title: Builder(
+        builder: (context) => Text(
+          _stepTitle(AppText.of(context)),
+          style: const TextStyle(
+            color: AppColors.primary,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
       centerTitle: true,
@@ -119,7 +151,7 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
           height: 8,
           alignment: Alignment.centerLeft,
           child: FractionallySizedBox(
-            widthFactor: _currentStep / 4.0,
+            widthFactor: _currentStep / _numberedSteps,
             child: Container(color: AppColors.secondary),
           ),
         ),
@@ -127,24 +159,34 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
     );
   }
 
-  String _stepTitle() {
+  String _stepTitle(AppStrings t) {
     switch (_currentStep) {
-      case 1:
-        return 'Step 1 of 4 — Upload Documents';
-      case 2:
-        return 'Step 2 of 4 — Your Details';
-      case 3:
-        return 'Step 3 of 4 — Verifying…';
-      case 4:
-        return 'Your Diagnosis';
+      case _language:
+        return '${t.stepOf(1, _numberedSteps)} — ${t.titleLanguage}';
+      case _upload:
+        return '${t.stepOf(2, _numberedSteps)} — ${t.titleUpload}';
+      case _details:
+        return '${t.stepOf(3, _numberedSteps)} — ${t.titleDetails}';
+      case _verify:
+        return t.titleVerifying;
+      case _results:
+        return t.titleDiagnosis;
       default:
-        return 'Mou';
+        return t.appName;
     }
   }
 
   Widget _buildCurrentStep() {
     switch (_currentStep) {
-      case 1:
+      case _welcome:
+        return WelcomeScreen(onGetStarted: _nextStep);
+      case _language:
+        return LanguageSelectScreen(
+          selectedLanguage: selectedLanguage,
+          onLanguageSelected: (v) => setState(() => selectedLanguage = v),
+          onContinue: _nextStep,
+        );
+      case _upload:
         return Step1Upload(
           aadhaarImage: aadhaarImage,
           rationCardImage: rationCardImage,
@@ -152,20 +194,18 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
           onRationCardPicked: (f) => setState(() => rationCardImage = f),
           onNext: _nextStep,
         );
-      case 2:
+      case _details:
         return Step2Details(
-          selectedLanguage: selectedLanguage,
           selectedSymptom: selectedSymptom,
           location: location,
           isAssisted: isAssisted,
-          onLanguageSelected: (v) => setState(() => selectedLanguage = v),
           onSymptomSelected: (v) => setState(() => selectedSymptom = v),
           onLocationChanged: (v) => setState(() => location = v),
           onAssistedChanged: (v) => setState(() => isAssisted = v),
           onNext: _nextStep,
           onBack: _previousStep,
         );
-      case 3:
+      case _verify:
         return Step3Verify(
           aadhaarImage: aadhaarImage!,
           rationCardImage: rationCardImage!,
@@ -181,7 +221,7 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
           onNext: _nextStep,
           onBack: _previousStep,
         );
-      case 4:
+      case _results:
         return Step4Results(
           diagnosis: diagnosis,
           diagnosisError: diagnosisError,

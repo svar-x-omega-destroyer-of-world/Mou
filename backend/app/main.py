@@ -56,6 +56,24 @@ _DISCLAIMER = (
     "This is not an eligibility decision."
 )
 
+# Localised disclaimer (FR-20).  Keyed by language code; English is the default.
+_DISCLAIMERS: dict[str, str] = {
+    "en": _DISCLAIMER,
+    "hi": (
+        "संभावित कारण — कार्रवाई करने से पहले अपने दस्तावेज़ों से मिलान करें। "
+        "यह पात्रता का निर्णय नहीं है।"
+    ),
+    "bn": (
+        "সম্ভাব্য কারণ — ব্যবস্থা নেওয়ার আগে নিজের নথির সঙ্গে মিলিয়ে নিন। "
+        "এটি যোগ্যতার সিদ্ধান্ত নয়।"
+    ),
+}
+
+
+def _disclaimer(language: Optional[str]) -> str:
+    """Return the disclaimer in the requested language (default English)."""
+    return _DISCLAIMERS.get((language or "en").lower(), _DISCLAIMER)
+
 _NEXT_STEPS: dict[str, NextStep] = {
     RootCause.name_mismatch: NextStep(office="Circle Office", form="RC Correction"),
     RootCause.dob_mismatch: NextStep(office="Circle Office", form="DOB Correction"),
@@ -150,13 +168,14 @@ async def diagnose(
         symptom=symptom.value,
     ))
 
-    # 5. Explanation
+    # 5. Explanation (generated in the requested language)
     explanation_text, explanation_source = explain(
         root_cause=cause,
         confidence=confidence,
         extracted=extracted,
         symptom=symptom.value,
         fps_location=fps_location,
+        language=language,
     )
 
     # 6. Anonymised event record (FR-12)
@@ -177,7 +196,7 @@ async def diagnose(
         extracted=extracted,
         explanation=explanation_text,
         next_step=_next_step(cause),
-        disclaimer=_DISCLAIMER,
+        disclaimer=_disclaimer(language),
         explanation_source=explanation_source,
         case_id=case_id,
     )

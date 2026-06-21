@@ -34,7 +34,7 @@ defective at a Fair Price Shop.
 
 Rules:
 1. Explain the LIKELY root cause in plain, simple language (approximately B1
-   English or simpler — short sentences, common words).
+   level or simpler — short sentences, common words).
 2. Always frame it as "Likely cause" — NEVER state that the person qualifies
    or does not qualify for rations.  You are not an eligibility authority.
 3. Mention both document names if you have them, but do NOT quote full Aadhaar
@@ -42,7 +42,21 @@ Rules:
 4. End with a concrete "As a next step" suggestion.
 5. Keep the total explanation under 120 words.
 6. Output only the explanation text — no preamble, no labels.
+7. Write the ENTIRE explanation in {language_name}. Use natural, everyday
+   {language_name} — not transliteration. Keep any document names readable.
 """
+
+# Map the API's two-letter language code to a human language name for the prompt.
+_LANGUAGE_NAMES = {
+    "en": "English",
+    "hi": "Hindi",
+    "bn": "Bengali",
+}
+
+
+def _language_name(language: Optional[str]) -> str:
+    """Human-readable language name for the Gemini directive (default English)."""
+    return _LANGUAGE_NAMES.get((language or "en").lower(), "English")
 
 # ── Template prompt ─────────────────────────────────────────────────────────
 
@@ -63,8 +77,11 @@ def _try_gemini(
     extracted: Extracted,
     symptom: str,
     fps_location: Optional[str],
+    language: Optional[str] = None,
 ) -> Optional[str]:
     """Call Gemini to generate a personalised explanation.
+
+    The explanation is produced in the requested *language* (en/hi/bn).
 
     Returns:
         Explanation string on success, or None on any error (auth, network,
@@ -92,7 +109,9 @@ def _try_gemini(
             model=GEMINI_MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
-                system_instruction=_SYSTEM_INSTRUCTION,
+                system_instruction=_SYSTEM_INSTRUCTION.format(
+                    language_name=_language_name(language),
+                ),
             ),
         )
         t = resp.text
@@ -107,6 +126,7 @@ def explain(
     extracted: Extracted,
     symptom: str,
     fps_location: Optional[str] = None,
+    language: Optional[str] = None,
 ) -> tuple[str, ExplanationSource]:
     """Generate an explanation, trying Gemini first then falling back locally.
 
@@ -116,6 +136,8 @@ def explain(
         extracted: The fields extracted from both documents.
         symptom: The symptom reported by the user.
         fps_location: Optional FPS location string.
+        language: Preferred language code (en/hi/bn).  The Gemini explanation is
+            produced in this language.  The offline fallback string is English.
 
     Returns:
         (explanation_text, explanation_source):
@@ -128,6 +150,7 @@ def explain(
         extracted,
         symptom,
         fps_location,
+        language,
     )
     if text:
         return text, ExplanationSource.gemini

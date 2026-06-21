@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/mou_api.dart';
+import '../l10n/strings.dart';
 import '../theme.dart';
 
 /// Step 4 — full diagnosis result screen (SRS §10.1).
@@ -60,6 +61,7 @@ class _Step4ResultsState extends State<Step4Results> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppText.of(context);
     if (widget.diagnosisError != null && widget.diagnosis == null) {
       return _ErrorResultView(
         error: widget.diagnosisError!,
@@ -84,7 +86,7 @@ class _Step4ResultsState extends State<Step4Results> {
           // ── Explanation ───────────────────────────────────────────────
           _SectionCard(
             icon: Icons.lightbulb_outline,
-            title: 'Likely cause',
+            title: t.likelyCause,
             child: Text(
               d.explanation,
               style: const TextStyle(
@@ -96,18 +98,18 @@ class _Step4ResultsState extends State<Step4Results> {
           // ── Next step (FR-9) ──────────────────────────────────────────
           _SectionCard(
             icon: Icons.directions_walk,
-            title: 'What to do next',
+            title: t.whatToDoNext,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _StepRow(
                     icon: Icons.location_city,
-                    label: 'Go to',
+                    label: t.goTo,
                     value: d.nextStep.office),
                 const SizedBox(height: 10),
                 _StepRow(
                     icon: Icons.description_outlined,
-                    label: 'Ask for form',
+                    label: t.askForForm,
                     value: d.nextStep.form),
                 const SizedBox(height: 16),
                 Container(
@@ -116,15 +118,15 @@ class _Step4ResultsState extends State<Step4Results> {
                     color: const Color(0xFFEEF7F1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.info_outline,
+                      const Icon(Icons.info_outline,
                           size: 18, color: AppColors.secondary),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Bring both your Aadhaar card and ration card when you visit.',
-                          style: TextStyle(
+                          t.bringBoth,
+                          style: const TextStyle(
                               fontSize: 13, color: AppColors.secondary),
                         ),
                       ),
@@ -192,7 +194,7 @@ class _Step4ResultsState extends State<Step4Results> {
                 onPressed: () =>
                     setState(() => _showFeedbackForm = true),
                 icon: const Icon(Icons.flag_outlined),
-                label: const Text('Flag this diagnosis as incorrect'),
+                label: Text(t.flagIncorrect),
               ),
             ],
           ] else ...[
@@ -202,15 +204,15 @@ class _Step4ResultsState extends State<Step4Results> {
                 color: const Color(0xFFEEF7F1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.check_circle,
+                  const Icon(Icons.check_circle,
                       color: AppColors.secondary, size: 22),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Thank you — your feedback has been recorded for review.',
-                      style: TextStyle(
+                      t.feedbackThanks,
+                      style: const TextStyle(
                           fontSize: 14, color: AppColors.secondary),
                     ),
                   ),
@@ -225,7 +227,7 @@ class _Step4ResultsState extends State<Step4Results> {
           OutlinedButton.icon(
             onPressed: widget.onStartOver,
             icon: const Icon(Icons.restart_alt),
-            label: const Text('Start a new diagnosis'),
+            label: Text(t.startNewDiagnosis),
           ),
 
           const SizedBox(height: 40),
@@ -239,9 +241,8 @@ class _Step4ResultsState extends State<Step4Results> {
       if (mounted) {
         setState(() => _loadingFeedback = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Feedback is unavailable — the diagnosis event was not recorded.'),
+          SnackBar(
+            content: Text(AppText.of(context).feedbackUnavailable),
             backgroundColor: AppColors.error,
           ),
         );
@@ -268,9 +269,8 @@ class _Step4ResultsState extends State<Step4Results> {
       if (mounted) {
         setState(() => _loadingFeedback = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Could not send feedback right now. Please try again.'),
+          SnackBar(
+            content: Text(AppText.of(context).feedbackError),
             backgroundColor: AppColors.error,
           ),
         );
@@ -315,6 +315,7 @@ class _RootCauseHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppText.of(context);
     final bg = _colors[diagnosis.rootCause] ?? const Color(0xFFE2E3E5);
     final fg = _fgColors[diagnosis.rootCause] ?? const Color(0xFF383D41);
     final icon = _icons[diagnosis.rootCause] ?? Icons.help_outline;
@@ -334,17 +335,19 @@ class _RootCauseHero extends StatelessWidget {
             children: [
               Icon(icon, color: fg, size: 32),
               const SizedBox(width: 12),
-              const Text('We found the likely issue',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.onSurfaceVariant,
-                      letterSpacing: 0.5)),
+              Expanded(
+                child: Text(t.weFoundIssue,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.onSurfaceVariant,
+                        letterSpacing: 0.5)),
+              ),
             ],
           ),
           const SizedBox(height: 14),
           Text(
-            diagnosis.rootCause.displayLabel,
+            t.rootCauseLabel(diagnosis.rootCause),
             style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w900,
@@ -366,21 +369,18 @@ class _ConfidenceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Color c;
-    String label;
     switch (confidence) {
       case Confidence.high:
         c = const Color(0xFF155724);
-        label = 'High confidence';
         break;
       case Confidence.medium:
         c = const Color(0xFF856404);
-        label = 'Medium confidence';
         break;
       case Confidence.low:
         c = const Color(0xFF721C24);
-        label = 'Low confidence — verify carefully';
         break;
     }
+    final label = AppText.of(context).confidenceRow(confidence);
     return Row(
       children: [
         Container(
@@ -500,6 +500,7 @@ class _ClusterBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppText.of(context);
     // Find the matching cluster for this user's location + root cause
     Cluster? match;
     if (fpsLocation != null && fpsLocation!.isNotEmpty) {
@@ -535,9 +536,9 @@ class _ClusterBanner extends StatelessWidget {
               const Icon(Icons.people_outline,
                   color: AppColors.secondary, size: 22),
               const SizedBox(width: 8),
-              const Expanded(
-                child: Text('You are not alone',
-                    style: TextStyle(
+              Expanded(
+                child: Text(t.youAreNotAlone,
+                    style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         color: AppColors.primary)),
@@ -547,21 +548,22 @@ class _ClusterBanner extends StatelessWidget {
           const SizedBox(height: 10),
           if (match != null) ...[
             Text(
-              '${match.beneficiariesAffected} people at ${match.fpsLocation} are affected by the same ${match.rootCause.displayLabel} issue.',
+              t.clusterMatch(match.beneficiariesAffected, match.fpsLocation,
+                  t.rootCauseLabel(match.rootCause)),
               style: const TextStyle(
                   fontSize: 15, height: 1.5, color: AppColors.onSurface),
             ),
           ] else ...[
             Text(
-              '$totalAffected anonymised cases across ${clusters.length} locations show similar exclusion patterns.',
+              t.clusterGeneral(totalAffected, clusters.length),
               style: const TextStyle(
                   fontSize: 15, height: 1.5, color: AppColors.onSurface),
             ),
           ],
           const SizedBox(height: 10),
-          const Text(
-            'Every diagnosis helps surface systemic defects that officials can act on.',
-            style: TextStyle(
+          Text(
+            t.everyDiagnosis,
+            style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.onSurfaceVariant,
                 fontStyle: FontStyle.italic),
@@ -601,7 +603,9 @@ class _SourceBadge extends StatelessWidget {
           ),
           const SizedBox(width: 5),
           Text(
-            isGemini ? 'AI-generated explanation' : 'Offline explanation',
+            isGemini
+                ? AppText.of(context).aiGenerated
+                : AppText.of(context).offlineExplanation,
             style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -632,6 +636,7 @@ class _FeedbackForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppText.of(context);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -642,23 +647,23 @@ class _FeedbackForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Flag as incorrect',
-              style: TextStyle(
+          Text(t.flagAsIncorrect,
+              style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary)),
           const SizedBox(height: 8),
-          const Text(
-            'Tell us what you think the real issue is (optional):',
-            style:
-                TextStyle(fontSize: 13, color: AppColors.onSurfaceVariant),
+          Text(
+            t.feedbackPrompt,
+            style: const TextStyle(
+                fontSize: 13, color: AppColors.onSurfaceVariant),
           ),
           const SizedBox(height: 10),
           TextField(
             controller: controller,
             maxLines: 3,
             decoration: InputDecoration(
-              hintText: 'e.g. "My card was found but they still refused"',
+              hintText: t.feedbackHint,
               filled: true,
               fillColor: AppColors.surfaceContainerLow,
               enabledBorder: OutlineInputBorder(
@@ -679,7 +684,7 @@ class _FeedbackForm extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: isLoading ? null : onCancel,
-                  child: const Text('Cancel'),
+                  child: Text(t.cancel),
                 ),
               ),
               const SizedBox(width: 12),
@@ -694,7 +699,7 @@ class _FeedbackForm extends StatelessWidget {
                           height: 20,
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 3))
-                      : const Text('Submit'),
+                      : Text(t.submit),
                 ),
               ),
             ],
@@ -715,6 +720,7 @@ class _ErrorResultView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppText.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -732,8 +738,8 @@ class _ErrorResultView extends StatelessWidget {
                   color: AppColors.error, size: 44),
             ),
             const SizedBox(height: 28),
-            const Text('Diagnosis failed',
-                style: TextStyle(
+            Text(t.diagnosisFailed,
+                style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary)),
@@ -746,7 +752,7 @@ class _ErrorResultView extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onStartOver,
               icon: const Icon(Icons.restart_alt),
-              label: const Text('Start over'),
+              label: Text(t.startOver),
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary),
             ),

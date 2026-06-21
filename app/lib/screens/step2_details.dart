@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import '../api/mou_api.dart';
+import '../l10n/strings.dart';
 import '../theme.dart';
 
 class Step2Details extends StatelessWidget {
-  final String? selectedLanguage;
   final Symptom? selectedSymptom;
   final String location;
   final bool isAssisted;
-  final ValueChanged<String?> onLanguageSelected;
   final ValueChanged<Symptom?> onSymptomSelected;
   final ValueChanged<String> onLocationChanged;
   final ValueChanged<bool> onAssistedChanged;
@@ -16,11 +15,9 @@ class Step2Details extends StatelessWidget {
 
   const Step2Details({
     super.key,
-    required this.selectedLanguage,
     required this.selectedSymptom,
     required this.location,
     required this.isAssisted,
-    required this.onLanguageSelected,
     required this.onSymptomSelected,
     required this.onLocationChanged,
     required this.onAssistedChanged,
@@ -30,7 +27,8 @@ class Step2Details extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Allow next as long as a symptom is selected (language + location are optional)
+    final t = AppText.of(context);
+    // Allow next as long as a symptom is selected (location is optional).
     final bool canContinue = selectedSymptom != null;
 
     return Column(
@@ -41,47 +39,21 @@ class Step2Details extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Language ─────────────────────────────────────────────
-                _SectionHeader(title: 'Preferred Language'),
-                const SizedBox(height: 12),
-                _LangCard(
-                  label: 'English',
-                  flag: '🇬🇧',
-                  isSelected: selectedLanguage == 'en',
-                  onTap: () => onLanguageSelected('en'),
-                ),
-                const SizedBox(height: 10),
-                _LangCard(
-                  label: 'हिन्दी (Hindi)',
-                  flag: '🇮🇳',
-                  isSelected: selectedLanguage == 'hi',
-                  onTap: () => onLanguageSelected('hi'),
-                ),
-                const SizedBox(height: 10),
-                _LangCard(
-                  label: 'বাংলা (Bengali)',
-                  flag: '🇧🇩',
-                  isSelected: selectedLanguage == 'bn',
-                  onTap: () => onLanguageSelected('bn'),
-                ),
-
-                const _Divider(),
-
                 // ── Proxy / Assisted mode (FR-2) ─────────────────────────
-                _SectionHeader(title: 'Who is this for?'),
+                _SectionHeader(title: t.whoIsThisFor),
                 const SizedBox(height: 12),
                 _ToggleCard(
                   leading: Icons.person,
-                  title: 'Self-serve',
-                  subtitle: 'I am filling this for myself',
+                  title: t.selfServe,
+                  subtitle: t.selfServeSub,
                   isSelected: !isAssisted,
                   onTap: () => onAssistedChanged(false),
                 ),
                 const SizedBox(height: 10),
                 _ToggleCard(
                   leading: Icons.people_alt,
-                  title: 'Assisted / Proxy',
-                  subtitle: 'I am helping someone else (CSC, family)',
+                  title: t.assisted,
+                  subtitle: t.assistedSub,
                   isSelected: isAssisted,
                   onTap: () => onAssistedChanged(true),
                 ),
@@ -89,10 +61,10 @@ class Step2Details extends StatelessWidget {
                 const _Divider(),
 
                 // ── Symptom (FR-3) ────────────────────────────────────────
-                _SectionHeader(title: 'What happened?'),
-                const Text(
-                  'Select the symptom that best describes the problem.',
-                  style: TextStyle(
+                _SectionHeader(title: t.whatHappened),
+                Text(
+                  t.whatHappenedSub,
+                  style: const TextStyle(
                       fontSize: 15, color: AppColors.onSurfaceVariant),
                 ),
                 const SizedBox(height: 14),
@@ -109,11 +81,11 @@ class Step2Details extends StatelessWidget {
                 const _Divider(),
 
                 // ── Location (FR-3) ───────────────────────────────────────
-                _SectionHeader(title: 'Where did it happen?'),
+                _SectionHeader(title: t.whereHappened),
                 const SizedBox(height: 6),
-                const Text(
-                  'Enter the name or ID of the Fair Price Shop (FPS).',
-                  style: TextStyle(
+                Text(
+                  t.whereHappenedSub,
+                  style: const TextStyle(
                       fontSize: 15, color: AppColors.onSurfaceVariant),
                 ),
                 const SizedBox(height: 12),
@@ -121,7 +93,7 @@ class Step2Details extends StatelessWidget {
                   initialValue: location,
                   onChanged: onLocationChanged,
                   decoration: InputDecoration(
-                    hintText: 'e.g. Silchar FPS #4471',
+                    hintText: t.locationHint,
                     prefixIcon:
                         const Icon(Icons.store, color: AppColors.outline),
                     filled: true,
@@ -140,11 +112,9 @@ class Step2Details extends StatelessWidget {
                 ),
 
                 if (!canContinue)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 16),
-                    child: _InfoBanner(
-                        message:
-                            'Please select what happened to continue.'),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: _InfoBanner(message: t.selectToContinue),
                   ),
 
                 const SizedBox(height: 80),
@@ -166,7 +136,7 @@ class Step2Details extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: onBack,
-                  child: const Text('Back'),
+                  child: Text(t.back),
                 ),
               ),
               const SizedBox(width: 16),
@@ -180,7 +150,7 @@ class Step2Details extends StatelessWidget {
                     foregroundColor:
                         canContinue ? Colors.white : AppColors.outline,
                   ),
-                  child: const Text('Analyse →'),
+                  child: Text(t.analyse),
                 ),
               ),
             ],
@@ -216,53 +186,6 @@ class _Divider extends StatelessWidget {
         padding: EdgeInsets.symmetric(vertical: 22),
         child: Divider(color: AppColors.surfaceContainerHighest, thickness: 2),
       );
-}
-
-class _LangCard extends StatelessWidget {
-  final String label;
-  final String flag;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _LangCard(
-      {required this.label,
-      required this.flag,
-      required this.isSelected,
-      required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFEEF7F1) : AppColors.surfaceContainerLow,
-          border: Border.all(
-              color: isSelected ? AppColors.secondary : Colors.transparent,
-              width: 2.5),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Text(flag, style: const TextStyle(fontSize: 24)),
-            const SizedBox(width: 14),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: isSelected ? AppColors.secondary : AppColors.primary)),
-            const Spacer(),
-            if (isSelected)
-              const Icon(Icons.check_circle,
-                  color: AppColors.secondary, size: 22),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _ToggleCard extends StatelessWidget {
@@ -359,6 +282,7 @@ class _SymptomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppText.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -390,7 +314,7 @@ class _SymptomCard extends StatelessWidget {
             const SizedBox(width: 14),
             Expanded(
               child: Text(
-                symptom.displayLabel,
+                t.symptomLabel(symptom),
                 style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
