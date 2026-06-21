@@ -95,11 +95,37 @@ class TestRuleCascade:
         )
         assert conf == Confidence.low, f"Expected low, got {conf}"
 
-    # Row 9 — unknown/low (nothing fires)
-    def test_row9_unknown_fallback(self):
+    # Row 9 — no_issues/high (docs match + symptom is open-ended → surface consistency)
+    def test_row9_no_issues_docs_match(self):
         cause, conf = classify(RuleInput(
             name_score=96,
             dob_status="match",
+            symptom=Symptom.other,
+        ))
+        assert cause == RootCause.no_issues, f"Expected no_issues, got {cause}"
+        assert conf == Confidence.high, f"Expected high, got {conf}"
+
+    # Acceptance test — Dino Saren / DINO SAREN: identical names must not
+    # generate a name-mismatch (extraction fix) and must surface no_issues.
+    def test_dino_saren_no_issues(self):
+        from app.matching import name_score, dob_status
+        ns = name_score("Dino Saren", "DINO SAREN")
+        ds = dob_status("2008-04-13", "2008-04-13")
+        cause, conf = classify(RuleInput(
+            name_score=ns,
+            dob_status=ds,
+            symptom=Symptom.name_not_matching,
+        ))
+        assert ns == 100, f"Expected name_score=100, got {ns}"
+        assert ds == "match", f"Expected dob_status='match', got {ds}"
+        assert cause == RootCause.no_issues, f"Expected no_issues, got {cause}"
+        assert conf == Confidence.high, f"Expected high, got {conf}"
+
+    # When DOB cannot be extracted (unknown) the fallback should still fire.
+    def test_unknown_fallback_when_dob_unknown(self):
+        cause, conf = classify(RuleInput(
+            name_score=96,
+            dob_status="unknown",
             symptom=Symptom.other,
         ))
         assert cause == RootCause.unknown, f"Expected unknown, got {cause}"

@@ -75,6 +75,7 @@ def _disclaimer(language: Optional[str]) -> str:
     return _DISCLAIMERS.get((language or "en").lower(), _DISCLAIMER)
 
 _NEXT_STEPS: dict[str, NextStep] = {
+    RootCause.no_issues: NextStep(office="Circle Office", form="General Records Check"),
     RootCause.name_mismatch: NextStep(office="Circle Office", form="RC Correction"),
     RootCause.dob_mismatch: NextStep(office="Circle Office", form="DOB Correction"),
     RootCause.seeding_gap: NextStep(office="Circle Office", form="Aadhaar Seeding"),
@@ -93,6 +94,8 @@ def _document_pattern(cause: RootCause, ns: int, ds: str, extracted: Extracted) 
 
     Examples: "Begum/Begam", "1989/1998", "aadhaar_not_seeded".
     """
+    if cause == RootCause.no_issues:
+        return "documents_consistent"
     if cause == RootCause.name_mismatch and extracted.aadhaar_name and extracted.ration_name_script:
         # Short descriptor: extract differing tokens
         a_tokens = extracted.aadhaar_name.lower().split()

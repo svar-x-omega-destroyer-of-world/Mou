@@ -86,7 +86,9 @@ class _Step4ResultsState extends State<Step4Results> {
           // ── Explanation ───────────────────────────────────────────────
           _SectionCard(
             icon: Icons.lightbulb_outline,
-            title: t.likelyCause,
+            title: d.rootCause == RootCause.noIssues
+                ? t.noIssuesNextStepLabel
+                : t.likelyCause,
             child: Text(
               d.explanation,
               style: const TextStyle(
@@ -287,7 +289,8 @@ class _RootCauseHero extends StatelessWidget {
   const _RootCauseHero({required this.diagnosis});
 
   static const _colors = {
-    RootCause.nameMismatch: Color(0xFFD4EDDA),
+    RootCause.noIssues: Color(0xFFD4EDDA),
+    RootCause.nameMismatch: Color(0xFFF8D7DA),
     RootCause.dobMismatch: Color(0xFFFFF3CD),
     RootCause.seedingGap: Color(0xFFD1ECF1),
     RootCause.ekycIncomplete: Color(0xFFFFF3CD),
@@ -296,7 +299,8 @@ class _RootCauseHero extends StatelessWidget {
   };
 
   static const _fgColors = {
-    RootCause.nameMismatch: Color(0xFF155724),
+    RootCause.noIssues: Color(0xFF155724),
+    RootCause.nameMismatch: Color(0xFF721C24),
     RootCause.dobMismatch: Color(0xFF856404),
     RootCause.seedingGap: Color(0xFF0C5460),
     RootCause.ekycIncomplete: Color(0xFF856404),
@@ -305,6 +309,7 @@ class _RootCauseHero extends StatelessWidget {
   };
 
   static const _icons = {
+    RootCause.noIssues: Icons.check_circle_outline,
     RootCause.nameMismatch: Icons.person_search,
     RootCause.dobMismatch: Icons.cake_outlined,
     RootCause.seedingGap: Icons.link_off,
@@ -319,6 +324,9 @@ class _RootCauseHero extends StatelessWidget {
     final bg = _colors[diagnosis.rootCause] ?? const Color(0xFFE2E3E5);
     final fg = _fgColors[diagnosis.rootCause] ?? const Color(0xFF383D41);
     final icon = _icons[diagnosis.rootCause] ?? Icons.help_outline;
+
+    final isNoIssues = diagnosis.rootCause == RootCause.noIssues;
+    final headerText = isNoIssues ? t.documentsConsistent : t.weFoundIssue;
 
     return Container(
       width: double.infinity,
@@ -336,7 +344,7 @@ class _RootCauseHero extends StatelessWidget {
               Icon(icon, color: fg, size: 32),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(t.weFoundIssue,
+                child: Text(headerText,
                     style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -354,6 +362,20 @@ class _RootCauseHero extends StatelessWidget {
                 color: fg,
                 letterSpacing: -0.5),
           ),
+          if (isNoIssues) ...[
+            const SizedBox(height: 10),
+            Text(t.noIssuesNamesMatch,
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: fg)),
+            const SizedBox(height: 4),
+            Text(t.noIssuesDobMatch,
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: fg)),
+          ],
           const SizedBox(height: 10),
           _ConfidenceRow(confidence: diagnosis.confidence),
         ],

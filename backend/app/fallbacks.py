@@ -17,6 +17,14 @@ from app.schemas import RootCause
 # Each entry is keyed by RootCause enum value.
 # {name} / {location} etc. can be .format()'d by the caller if desired.
 _FALLBACKS: dict[str, str] = {
+    RootCause.no_issues: (
+        "The names and dates of birth on your Aadhaar and ration card appear "
+        "to match each other — no document mismatch was detected.  If you are "
+        "still being denied rations, the likely cause is an Aadhaar seeding "
+        "gap or an incomplete e-KYC record rather than a document difference.  "
+        "As a next step, visit your local Circle Office with both documents and "
+        "ask them to check your ration card record for seeding or e-KYC status."
+    ),
     RootCause.name_mismatch: (
         "The name on your Aadhaar card and your ration card look slightly "
         "different when compared side by side.  Even a small spelling "

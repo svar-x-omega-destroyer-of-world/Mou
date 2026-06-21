@@ -256,6 +256,26 @@ class AppStrings {
       'नया निदान शुरू करें', 'নতুন নির্ণয় শুরু করুন');
   String get weFoundIssue => _p('We found the likely issue',
       'हमें संभावित समस्या मिली', 'আমরা সম্ভাব্য সমস্যাটি খুঁজে পেয়েছি');
+  String get documentsConsistent => _p(
+        'Documents appear consistent',
+        'दस्तावेज़ सही दिखते हैं',
+        'নথি সামঞ্জস্যপূর্ণ দেখাচ্ছে',
+      );
+  String get noIssuesNamesMatch => _p(
+        '✓  Names appear to match',
+        '✓  नाम मेल खाते दिखते हैं',
+        '✓  নাম মিলে যাচ্ছে বলে মনে হচ্ছে',
+      );
+  String get noIssuesDobMatch => _p(
+        '✓  Dates of birth appear to match',
+        '✓  जन्म तिथि मेल खाती दिखती है',
+        '✓  জন্ম তারিখ মিলে যাচ্ছে বলে মনে হচ্ছে',
+      );
+  String get noIssuesNextStepLabel => _p(
+        'Still having trouble?',
+        'फिर भी समस्या हो रही है?',
+        'এখনও সমস্যা হচ্ছে?',
+      );
   String get flagAsIncorrect =>
       _p('Flag as incorrect', 'ग़लत बताएँ', 'ভুল হিসেবে চিহ্নিত করুন');
   String get feedbackPrompt => _p(
@@ -300,6 +320,8 @@ class AppStrings {
   /// Localised label for a [RootCause].
   String rootCauseLabel(RootCause c) {
     switch (c) {
+      case RootCause.noIssues:
+        return _p('No Issues Found', 'कोई समस्या नहीं मिली', 'কোনো সমস্যা পাওয়া যায়নি');
       case RootCause.nameMismatch:
         return _p('Name Mismatch', 'नाम में अंतर', 'নামে গরমিল');
       case RootCause.dobMismatch:

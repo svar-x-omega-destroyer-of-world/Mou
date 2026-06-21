@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 
 class RootCause(str, Enum):
+    no_issues = "no_issues"          # documents match — no mismatch detected
     name_mismatch = "name_mismatch"
     dob_mismatch = "dob_mismatch"
     seeding_gap = "seeding_gap"

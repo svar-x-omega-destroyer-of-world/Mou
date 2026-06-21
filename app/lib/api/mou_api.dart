@@ -43,6 +43,7 @@ enum Symptom {
 }
 
 enum RootCause {
+  noIssues('no_issues', 'No Issues Found'),
   nameMismatch('name_mismatch', 'Name Mismatch'),
   dobMismatch('dob_mismatch', 'Date of Birth Mismatch'),
   seedingGap('seeding_gap', 'Aadhaar Seeding Gap'),

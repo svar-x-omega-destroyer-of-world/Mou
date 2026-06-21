@@ -109,6 +109,7 @@ components:
         The single primary root cause chosen by deterministic, hardcoded rules
         (FR-7). No LLM on this decision path.
       enum:
+        - no_issues            # documents match — no mismatch detected
         - name_mismatch        # transliteration-level name difference across docs
         - dob_mismatch         # date-of-birth differs across docs
         - seeding_gap          # Aadhaar not seeded / linked to the ration card
