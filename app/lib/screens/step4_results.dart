@@ -87,7 +87,7 @@ class _Step4ResultsState extends State<Step4Results> {
           _SectionCard(
             icon: Icons.lightbulb_outline,
             title: d.rootCause == RootCause.noIssues
-                ? t.noIssuesNextStepLabel
+                ? t.whatWeFound
                 : t.likelyCause,
             child: Text(
               d.explanation,
@@ -140,14 +140,18 @@ class _Step4ResultsState extends State<Step4Results> {
           ),
           const SizedBox(height: 16),
 
-          // ── Cluster banner (FR-12) ────────────────────────────────────
-          if (_clusters != null) _ClusterBanner(
-            clusters: _clusters!,
-            fpsLocation: widget.fpsLocation,
-            rootCause: d.rootCause,
-          ),
+          // ── Cluster banner (FR-12) — suppressed for no_issues since there
+          //    is no systemic defect to cluster and "you are not alone /
+          //    similar exclusion patterns" contradicts the diagnosis. ──────
+          if (_clusters != null && d.rootCause != RootCause.noIssues)
+            _ClusterBanner(
+              clusters: _clusters!,
+              fpsLocation: widget.fpsLocation,
+              rootCause: d.rootCause,
+            ),
 
-          if (_clusters != null) const SizedBox(height: 16),
+          if (_clusters != null && d.rootCause != RootCause.noIssues)
+            const SizedBox(height: 16),
 
           // ── Disclaimer (FR-20) ────────────────────────────────────────
           Container(

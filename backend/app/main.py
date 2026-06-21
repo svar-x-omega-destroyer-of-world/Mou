@@ -75,7 +75,7 @@ def _disclaimer(language: Optional[str]) -> str:
     return _DISCLAIMERS.get((language or "en").lower(), _DISCLAIMER)
 
 _NEXT_STEPS: dict[str, NextStep] = {
-    RootCause.no_issues: NextStep(office="Circle Office", form="General Records Check"),
+    RootCause.no_issues: NextStep(office="Circle Office", form="Aadhaar Seeding / e-KYC Check"),
     RootCause.name_mismatch: NextStep(office="Circle Office", form="RC Correction"),
     RootCause.dob_mismatch: NextStep(office="Circle Office", form="DOB Correction"),
     RootCause.seeding_gap: NextStep(office="Circle Office", form="Aadhaar Seeding"),

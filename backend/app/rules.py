@@ -59,14 +59,19 @@ def classify(inp: RuleInput) -> _RuleResult:
         return (RootCause.dob_mismatch, conf)
 
     # ── RULE 3.5 — Documents are consistent ──
-    # Both name similarity (≥85) and DOB status confirm the two documents agree.
-    # For FPS-access symptoms (card_not_found, turned_away_at_fps) we fall
-    # through to Rules 4/5 which give a more actionable diagnosis.
-    # For name-mismatch or open-ended symptoms, surfacing "no issues found"
-    # is the most accurate and least misleading result.
-    if ns >= 85 and inp.dob_status == "match":
+    # Rule 3 already caught dob_status == "mismatch".  Any remaining status
+    # ("match" or "unknown") combined with a high name score means no document
+    # discrepancy was found.  For FPS-access symptoms (card_not_found,
+    # turned_away_at_fps) we fall through to Rules 4/5 which are more
+    # actionable even when documents agree.  For name-mismatch or open-ended
+    # symptoms, surfacing no_issues is the most accurate result.
+    # Confidence is high when DOBs are confirmed equal, medium when one or
+    # both DOBs could not be extracted (the name comparison is still clean).
+    if ns >= 85 and inp.dob_status != "mismatch":
         if symptom in (Symptom.name_not_matching, Symptom.other):
-            return (RootCause.no_issues, Confidence.high)
+            conf = (Confidence.high if inp.dob_status == "match"
+                    else Confidence.medium)
+            return (RootCause.no_issues, conf)
 
     # ── RULE 4 — Seeding gap (docs clean, but card not found at shop) ──
     if symptom == Symptom.card_not_found:

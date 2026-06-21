@@ -271,10 +271,11 @@ class AppStrings {
         '✓  जन्म तिथि मेल खाती दिखती है',
         '✓  জন্ম তারিখ মিলে যাচ্ছে বলে মনে হচ্ছে',
       );
-  String get noIssuesNextStepLabel => _p(
-        'Still having trouble?',
-        'फिर भी समस्या हो रही है?',
-        'এখনও সমস্যা হচ্ছে?',
+  String get whatWeFound => _p('What we found', 'हमें जो मिला', 'আমরা যা পেয়েছি');
+  String get stillHavingTrouble => _p(
+        'Still having trouble at the shop?',
+        'दुकान पर अब भी समस्या हो रही है?',
+        'দোকানে এখনও সমস্যা হচ্ছে?',
       );
   String get flagAsIncorrect =>
       _p('Flag as incorrect', 'ग़लत बताएँ', 'ভুল হিসেবে চিহ্নিত করুন');

@@ -134,8 +134,6 @@ class _LoadingViewState extends State<_LoadingView>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   int _phase = 0;
-  // Number of cycling status phrases (see AppStrings.verifyPhases).
-  static const _phaseCount = 4;
 
   @override
   void initState() {
@@ -143,11 +141,15 @@ class _LoadingViewState extends State<_LoadingView>
     _ctrl = AnimationController(
         vsync: this, duration: const Duration(seconds: 2))
       ..repeat();
-    // Cycle phases every ~2.5s
+    // Cycle phases every ~2.5s; derive count from the live list so this
+    // never drifts from AppStrings.verifyPhases.
     Future.doWhile(() async {
       await Future.delayed(const Duration(milliseconds: 2500));
       if (!mounted) return false;
-      setState(() => _phase = (_phase + 1) % _phaseCount);
+      setState(() {
+        final count = AppText.of(context).verifyPhases.length;
+        _phase = (_phase + 1) % (count > 0 ? count : 1);
+      });
       return mounted;
     });
   }

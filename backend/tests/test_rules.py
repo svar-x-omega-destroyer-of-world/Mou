@@ -121,12 +121,23 @@ class TestRuleCascade:
         assert cause == RootCause.no_issues, f"Expected no_issues, got {cause}"
         assert conf == Confidence.high, f"Expected high, got {conf}"
 
-    # When DOB cannot be extracted (unknown) the fallback should still fire.
-    def test_unknown_fallback_when_dob_unknown(self):
+    # When DOB cannot be extracted (unknown) and names match, still return
+    # no_issues — but with medium confidence since DOB is unverified.
+    def test_no_issues_medium_when_dob_unknown(self):
+        cause, conf = classify(RuleInput(
+            name_score=96,
+            dob_status="unknown",
+            symptom=Symptom.name_not_matching,
+        ))
+        assert cause == RootCause.no_issues, f"Expected no_issues, got {cause}"
+        assert conf == Confidence.medium, f"Expected medium, got {conf}"
+
+    # Same with symptom=other.
+    def test_no_issues_medium_other_dob_unknown(self):
         cause, conf = classify(RuleInput(
             name_score=96,
             dob_status="unknown",
             symptom=Symptom.other,
         ))
-        assert cause == RootCause.unknown, f"Expected unknown, got {cause}"
-        assert conf == Confidence.low, f"Expected low, got {conf}"
+        assert cause == RootCause.no_issues, f"Expected no_issues, got {cause}"
+        assert conf == Confidence.medium, f"Expected medium, got {conf}"

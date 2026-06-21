@@ -111,7 +111,7 @@ _TRAILING_LABEL_RE = re.compile(
     r"male|female|transgender|"
     r"father|husband|mother|wife|guardian|"
     r"s/o|d/o|w/o|c/o|"
-    r"address|government\s*of\s*india|জন্ম\s*তারিখ|জন্ম|জন্ম\s*সাল"
+    r"address|government\s*of\s*india|জন্ম\s*তারিখ|জন্ম\s*সাল"
     r")\b",
     re.IGNORECASE,
 )
