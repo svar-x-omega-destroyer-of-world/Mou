@@ -13,6 +13,7 @@ library;
 import 'package:flutter/widgets.dart';
 
 import '../api/mou_api.dart';
+import '../demo/demo_scenarios.dart';
 
 /// UI language codes supported by the app, in display order.
 const List<String> kSupportedLanguages = ['en', 'hi', 'bn'];
@@ -39,6 +40,114 @@ class AppStrings {
         'মৌ আপনার আধার ও রেশন কার্ড মিলিয়ে সেই নথির গরমিল খুঁজে বের করে যা নীরবে আপনার সুবিধা আটকে রাখতে পারে।',
       );
   String get getStarted => _p('Get Started', 'शुरू करें', 'শুরু করুন');
+
+  // ── Home / mode selection ───────────────────────────────────────────────────
+  String get liveVerification =>
+      _p('Live Verification', 'लाइव सत्यापन', 'লাইভ যাচাই');
+  String get liveVerificationSub => _p(
+        'Use your own Aadhaar and ration card photos.',
+        'अपने आधार और राशन कार्ड की फ़ोटो का उपयोग करें।',
+        'আপনার নিজের আধার ও রেশন কার্ডের ছবি ব্যবহার করুন।',
+      );
+  String get tryDemo => _p('Try Demo', 'डेमो आज़माएँ', 'ডেমো দেখুন');
+  String get tryDemoSub => _p(
+        'See a guided, presentation-ready walkthrough.',
+        'एक निर्देशित, प्रस्तुति-तैयार डेमो देखें।',
+        'একটি গাইডেড, উপস্থাপন-প্রস্তুত ওয়াকথ্রু দেখুন।',
+      );
+
+  // ── Demo scenario picker ────────────────────────────────────────────────────
+  String get demoBadge => _p('DEMO MODE', 'डेमो मोड', 'ডেমো মোড');
+  String get chooseScenario =>
+      _p('Choose a demo scenario', 'एक डेमो परिदृश्य चुनें', 'একটি ডেমো দৃশ্য বেছে নিন');
+  String get chooseScenarioSub => _p(
+        'You will still upload both documents and walk through the full flow. '
+            'The scenario only guarantees a clean, reliable result.',
+        'आप फिर भी दोनों दस्तावेज़ अपलोड करेंगे और पूरी प्रक्रिया से गुज़रेंगे। '
+            'परिदृश्य केवल एक साफ़, भरोसेमंद परिणाम सुनिश्चित करता है।',
+        'আপনি তবুও দুটি নথিই আপলোড করবেন এবং পুরো ধাপ পার হবেন। '
+            'দৃশ্যটি কেবল একটি পরিষ্কার, নির্ভরযোগ্য ফলাফল নিশ্চিত করে।',
+      );
+  String get titleDemo => _p('Demo', 'डेमो', 'ডেমো');
+
+  /// Localised name for a demo scenario.
+  String demoScenarioName(String id) {
+    switch (id) {
+      case 'perfect_match':
+        return _p('Perfect Match', 'पूर्ण मिलान', 'নিখুঁত মিল');
+      case 'name_mismatch':
+        return _p('Name Mismatch', 'नाम में अंतर', 'নামে গরমিল');
+      case 'dob_mismatch':
+        return _p('DOB Mismatch', 'जन्म तिथि में अंतर', 'জন্ম তারিখে গরমিল');
+      case 'multiple_issues':
+        return _p('Multiple Issues', 'कई समस्याएँ', 'একাধিক সমস্যা');
+      default:
+        return id;
+    }
+  }
+
+  /// One-line description for a demo scenario in the picker.
+  String demoScenarioDesc(String id) {
+    switch (id) {
+      case 'perfect_match':
+        return _p('Both documents agree — approved.',
+            'दोनों दस्तावेज़ मेल खाते हैं — स्वीकृत।', 'দুই নথি মিলে যায় — অনুমোদিত।');
+      case 'name_mismatch':
+        return _p('Name differs — review required.',
+            'नाम अलग है — समीक्षा आवश्यक।', 'নাম আলাদা — পর্যালোচনা প্রয়োজন।');
+      case 'dob_mismatch':
+        return _p('Date of birth differs — review required.',
+            'जन्म तिथि अलग है — समीक्षा आवश्यक।',
+            'জন্ম তারিখ আলাদা — পর্যালোচনা প্রয়োজন।');
+      case 'multiple_issues':
+        return _p('Name and DOB differ — high risk.',
+            'नाम और जन्म तिथि अलग — उच्च जोखिम।',
+            'নাম ও জন্ম তারিখ আলাদা — উচ্চ ঝুঁকি।');
+      default:
+        return '';
+    }
+  }
+
+  // ── Demo verify / result chrome ─────────────────────────────────────────────
+  String get aadhaarLabel => _p('AADHAAR', 'आधार', 'আধার');
+  String get rationLabel => _p('RATION CARD', 'राशन कार्ड', 'রেশন কার্ড');
+  String get nameLabel => _p('Name', 'नाम', 'নাম');
+  String get comparisonResult =>
+      _p('Comparison result', 'तुलना परिणाम', 'তুলনার ফলাফল');
+  String get nameMatchLabel => _p('Name match', 'नाम मिलान', 'নাম মিল');
+  String get dobMatchLabel => _p('Date of birth match', 'जन्म तिथि मिलान', 'জন্ম তারিখ মিল');
+  String get matched => _p('Match', 'मेल', 'মিল');
+  String get notMatched => _p('Mismatch', 'अंतर', 'গরমিল');
+  String get statusLabel => _p('Status', 'स्थिति', 'অবস্থা');
+  String get confidenceLabel => _p('Confidence', 'विश्वसनीयता', 'আস্থা');
+  String get riskLabel => _p('Risk', 'जोखिम', 'ঝুঁকি');
+  String get aiAnalysisTitle => _p('AI Analysis', 'एआई विश्लेषण', 'এআই বিশ্লেষণ');
+  String get aiRecommendationTitle =>
+      _p('AI Recommendation', 'एआई सिफ़ारिश', 'এআই সুপারিশ');
+  String get riskAssessmentTitle =>
+      _p('Risk Assessment', 'जोखिम मूल्यांकन', 'ঝুঁকি মূল্যায়ন');
+
+  String demoStatusLabel(DemoStatus s) {
+    switch (s) {
+      case DemoStatus.approved:
+        return _p('Approved', 'स्वीकृत', 'অনুমোদিত');
+      case DemoStatus.reviewRequired:
+        return _p('Review Required', 'समीक्षा आवश्यक', 'পর্যালোচনা প্রয়োজন');
+      case DemoStatus.highRisk:
+        return _p('High Risk', 'उच्च जोखिम', 'উচ্চ ঝুঁকি');
+    }
+  }
+
+  String demoRiskLabel(DemoRisk r) {
+    switch (r) {
+      case DemoRisk.low:
+        return _p('Low', 'कम', 'কম');
+      case DemoRisk.medium:
+        return _p('Medium', 'मध्यम', 'মাঝারি');
+      case DemoRisk.high:
+        return _p('High', 'उच्च', 'উচ্চ');
+    }
+  }
 
   // ── Language selection ──────────────────────────────────────────────────────
   String get chooseLanguage =>

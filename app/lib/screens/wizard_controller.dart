@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../api/mou_api.dart';
+import '../demo/demo_scenarios.dart';
 import '../l10n/strings.dart';
 import '../theme.dart';
 import 'welcome.dart';
+import 'demo_select.dart';
 import 'language_select.dart';
 import 'step1_upload.dart';
 import 'step2_details.dart';
@@ -30,11 +32,18 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
   static const int _details = 3;
   static const int _verify = 4;
   static const int _results = 5;
+  // Demo scenario picker — sits between welcome and language only in the demo
+  // flow.  Kept outside the 0–5 numbered range so the "Step X of N" counter and
+  // progress bar maths for the real flow are untouched.
+  static const int _demoSelect = 6;
   static const int _lastStep = _results;
   // Number of numbered steps shown in the "Step X of N" counter / progress bar.
   static const int _numberedSteps = 5;
 
   int _currentStep = _welcome;
+
+  // ── Demo Mode: chosen scenario (null ⇒ live verification) ─────────────────
+  DemoScenario? demoScenario;
 
   // ── Step 1: Preferred language (drives all UI copy) ───────────────────────
   String? selectedLanguage;
@@ -73,14 +82,36 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
   }
 
   void _previousStep() {
-    if (_currentStep > _welcome) {
+    // The demo picker sits outside the numbered range — back returns to welcome.
+    if (_currentStep == _demoSelect) {
+      setState(() => _currentStep = _welcome);
+      return;
+    }
+    // From the language step, back returns to the demo picker in the demo flow,
+    // otherwise to the welcome screen.
+    if (_currentStep == _language) {
+      setState(() => _currentStep = demoScenario != null ? _demoSelect : _welcome);
+      return;
+    }
+    if (_currentStep > _welcome && _currentStep <= _lastStep) {
       setState(() => _currentStep--);
     }
+  }
+
+  // ── Demo Mode entry ─────────────────────────────────────────────────────────
+  void _startDemo() => setState(() => _currentStep = _demoSelect);
+
+  void _onScenarioSelected(DemoScenario s) {
+    setState(() {
+      demoScenario = s;
+      _currentStep = _language; // continue the full, normal flow
+    });
   }
 
   void _restart() {
     setState(() {
       _currentStep = _welcome;
+      demoScenario = null;
       selectedLanguage = null;
       aadhaarImage = null;
       rationCardImage = null;
@@ -151,7 +182,10 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
           height: 8,
           alignment: Alignment.centerLeft,
           child: FractionallySizedBox(
-            widthFactor: _currentStep / _numberedSteps,
+            // demoSelect (outside the numbered range) shows an empty bar.
+            widthFactor: _currentStep <= _lastStep
+                ? _currentStep / _numberedSteps
+                : 0,
             child: Container(color: AppColors.secondary),
           ),
         ),
@@ -161,6 +195,8 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
 
   String _stepTitle(AppStrings t) {
     switch (_currentStep) {
+      case _demoSelect:
+        return t.titleDemo;
       case _language:
         return '${t.stepOf(1, _numberedSteps)} — ${t.titleLanguage}';
       case _upload:
@@ -179,7 +215,9 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
   Widget _buildCurrentStep() {
     switch (_currentStep) {
       case _welcome:
-        return WelcomeScreen(onGetStarted: _nextStep);
+        return WelcomeScreen(onGetStarted: _nextStep, onTryDemo: _startDemo);
+      case _demoSelect:
+        return DemoSelectScreen(onScenarioSelected: _onScenarioSelected);
       case _language:
         return LanguageSelectScreen(
           selectedLanguage: selectedLanguage,
@@ -212,6 +250,9 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
           symptom: selectedSymptom ?? Symptom.turnedAwayAtFps,
           fpsLocation: location,
           language: selectedLanguage,
+          // In demo mode the diagnosis is injected deterministically and the
+          // backend is never called.  Live verification passes null.
+          demoScenario: demoScenario,
           onDiagnosisReady: (d, err) {
             setState(() {
               diagnosis = d;
@@ -226,6 +267,7 @@ class _WizardControllerScreenState extends State<WizardControllerScreen> {
           diagnosis: diagnosis,
           diagnosisError: diagnosisError,
           fpsLocation: location,
+          demoScenario: demoScenario,
           onStartOver: _restart,
         );
       default:

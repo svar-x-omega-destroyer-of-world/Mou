@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/mou_api.dart';
+import '../demo/demo_scenarios.dart';
 import '../l10n/strings.dart';
 import '../theme.dart';
 
@@ -17,6 +18,7 @@ class Step4Results extends StatefulWidget {
   final Diagnosis? diagnosis;
   final String? diagnosisError;
   final String? fpsLocation;
+  final DemoScenario? demoScenario;
   final VoidCallback onStartOver;
 
   const Step4Results({
@@ -24,6 +26,7 @@ class Step4Results extends StatefulWidget {
     this.diagnosis,
     this.diagnosisError,
     this.fpsLocation,
+    this.demoScenario,
     required this.onStartOver,
   });
 
@@ -73,6 +76,7 @@ class _Step4ResultsState extends State<Step4Results> {
     if (d == null) {
       return const Center(child: CircularProgressIndicator());
     }
+    final demo = widget.demoScenario;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -84,18 +88,50 @@ class _Step4ResultsState extends State<Step4Results> {
           const SizedBox(height: 24),
 
           // ── Explanation ───────────────────────────────────────────────
-          _SectionCard(
-            icon: Icons.lightbulb_outline,
-            title: d.rootCause == RootCause.noIssues
-                ? t.whatWeFound
-                : t.likelyCause,
-            child: Text(
-              d.explanation,
-              style: const TextStyle(
-                  fontSize: 16, height: 1.55, color: AppColors.onSurface),
+          // Demo mode presents the same content as a polished AI Analysis +
+          // AI Recommendation + Risk Assessment trio; live mode keeps the
+          // single explanation card unchanged.
+          if (demo != null) ...[
+            _SectionCard(
+              icon: Icons.auto_awesome,
+              title: t.aiAnalysisTitle,
+              child: Text(
+                d.explanation,
+                style: const TextStyle(
+                    fontSize: 16, height: 1.55, color: AppColors.onSurface),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+            _SectionCard(
+              icon: Icons.recommend_outlined,
+              title: t.aiRecommendationTitle,
+              child: Text(
+                demo.aiRecommendation,
+                style: const TextStyle(
+                    fontSize: 16, height: 1.55, color: AppColors.onSurface),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _SectionCard(
+              icon: Icons.shield_outlined,
+              title: t.riskAssessmentTitle,
+              child: _DemoRiskAssessment(demo: demo),
+            ),
+            const SizedBox(height: 16),
+          ] else ...[
+            _SectionCard(
+              icon: Icons.lightbulb_outline,
+              title: d.rootCause == RootCause.noIssues
+                  ? t.whatWeFound
+                  : t.likelyCause,
+              child: Text(
+                d.explanation,
+                style: const TextStyle(
+                    fontSize: 16, height: 1.55, color: AppColors.onSurface),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // ── Next step (FR-9) ──────────────────────────────────────────
           _SectionCard(
@@ -417,6 +453,69 @@ class _ConfidenceRow extends StatelessWidget {
         Text(label,
             style: TextStyle(
                 fontSize: 13, fontWeight: FontWeight.w600, color: c)),
+      ],
+    );
+  }
+}
+
+// ── Demo risk assessment (deterministic) ──────────────────────────────────────
+
+class _DemoRiskAssessment extends StatelessWidget {
+  final DemoScenario demo;
+
+  const _DemoRiskAssessment({required this.demo});
+
+  static const _riskColors = {
+    DemoRisk.low: Color(0xFF155724),
+    DemoRisk.medium: Color(0xFF856404),
+    DemoRisk.high: Color(0xFF721C24),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppText.of(context);
+    final riskColor = _riskColors[demo.risk]!;
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(t.riskLabel,
+                style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onSurfaceVariant)),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: riskColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(t.demoRiskLabel(demo.risk),
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: riskColor)),
+            ),
+          ],
+        ),
+        const Divider(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(t.confidenceLabel,
+                style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onSurfaceVariant)),
+            Text('${demo.confidencePercent}%',
+                style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.primary)),
+          ],
+        ),
       ],
     );
   }

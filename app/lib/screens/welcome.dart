@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import '../l10n/strings.dart';
 import '../theme.dart';
 
-/// Step 0 — the very first screen.  Branding + a single call to action that
-/// leads into language selection (which must happen before any document upload).
+/// Step 0 — the very first screen.  Branding + the two entry points:
+///   • Live Verification — the real flow, using the user's own documents.
+///   • Try Demo — the same complete flow, but with a deterministic, polished
+///     result chosen up front (presentation-safe for the hackathon).
 class WelcomeScreen extends StatelessWidget {
   final VoidCallback onGetStarted;
+  final VoidCallback onTryDemo;
 
-  const WelcomeScreen({super.key, required this.onGetStarted});
+  const WelcomeScreen({
+    super.key,
+    required this.onGetStarted,
+    required this.onTryDemo,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -56,13 +63,35 @@ class WelcomeScreen extends StatelessWidget {
                   fontSize: 16, height: 1.5, color: AppColors.onSurfaceVariant),
             ),
             const Spacer(flex: 3),
+            // ── Live Verification — primary, real flow ──────────────────────
             ElevatedButton.icon(
               onPressed: onGetStarted,
-              icon: const Icon(Icons.arrow_forward),
-              label: Text(t.getStarted),
+              icon: const Icon(Icons.verified_user_outlined),
+              label: Text(t.liveVerification),
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.secondary,
                   foregroundColor: Colors.white),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              t.liveVerificationSub,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.onSurfaceVariant),
+            ),
+            const SizedBox(height: 18),
+            // ── Try Demo — same flow, deterministic result ──────────────────
+            OutlinedButton.icon(
+              onPressed: onTryDemo,
+              icon: const Icon(Icons.play_circle_outline),
+              label: Text(t.tryDemo),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              t.tryDemoSub,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.onSurfaceVariant),
             ),
             const SizedBox(height: 24),
           ],

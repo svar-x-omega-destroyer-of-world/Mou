@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../api/mou_api.dart';
+import '../demo/demo_scenarios.dart';
 import '../l10n/strings.dart';
 import '../theme.dart';
 
 /// Step 3 — fires the real POST /diagnose, then shows extracted fields
 /// side-by-side for user verification (FR-8).
+///
+/// Demo Mode ([demoScenario] != null): the backend is never called.  We still
+/// play the realistic "reading documents…" loading animation, then show the
+/// scenario's deterministic, polished result.  Live verification is unchanged.
 class Step3Verify extends StatefulWidget {
   final XFile aadhaarImage;
   final XFile rationCardImage;
   final Symptom symptom;
   final String? fpsLocation;
   final String? language;
+  final DemoScenario? demoScenario;
   final void Function(Diagnosis? diagnosis, String? error) onDiagnosisReady;
   final VoidCallback onNext;
   final VoidCallback onBack;
@@ -23,6 +29,7 @@ class Step3Verify extends StatefulWidget {
     required this.symptom,
     this.fpsLocation,
     this.language,
+    this.demoScenario,
     required this.onDiagnosisReady,
     required this.onNext,
     required this.onBack,
@@ -48,6 +55,22 @@ class _Step3VerifyState extends State<Step3Verify> {
       _state = _VerifyState.loading;
       _errorMessage = null;
     });
+
+    // ── Demo Mode: deterministic, never touches the backend ──────────────────
+    final demo = widget.demoScenario;
+    if (demo != null) {
+      // Hold the realistic loading animation briefly so it feels like a live
+      // OCR + matching run, then surface the pre-built result.
+      await Future.delayed(const Duration(milliseconds: 2600));
+      if (!mounted) return;
+      final result = demo.toDiagnosis();
+      setState(() {
+        _diagnosis = result;
+        _state = _VerifyState.ready;
+      });
+      widget.onDiagnosisReady(result, null);
+      return;
+    }
 
     try {
       final result = await MouApi.instance.diagnose(
@@ -112,6 +135,13 @@ class _Step3VerifyState extends State<Step3Verify> {
           isRetake: false,
         );
       case _VerifyState.ready:
+        if (widget.demoScenario != null) {
+          return _DemoVerifyView(
+            scenario: widget.demoScenario!,
+            onNext: widget.onNext,
+            onBack: widget.onBack,
+          );
+        }
         return _VerifyReadyView(
           diagnosis: _diagnosis!,
           onNext: widget.onNext,
@@ -631,6 +661,360 @@ class _DobChip extends StatelessWidget {
                   color: AppColors.primary)),
         ],
       ),
+    );
+  }
+}
+
+// ── Demo verification UI (deterministic) ─────────────────────────────────────
+
+class _DemoVerifyView extends StatelessWidget {
+  final DemoScenario scenario;
+  final VoidCallback onNext;
+  final VoidCallback onBack;
+
+  const _DemoVerifyView({
+    required this.scenario,
+    required this.onNext,
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppText.of(context);
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(t.verifyTitle,
+                    style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary)),
+                const SizedBox(height: 6),
+                Text(t.verifySubtitle,
+                    style: const TextStyle(
+                        fontSize: 15, color: AppColors.onSurfaceVariant)),
+                const SizedBox(height: 24),
+
+                // ── Document cards ─────────────────────────────────────────
+                _DocCard(
+                  title: t.aadhaarLabel,
+                  icon: Icons.badge_outlined,
+                  name: scenario.aadhaarName,
+                  dob: scenario.aadhaarDob,
+                  nameLabel: t.nameLabel,
+                  dobLabel: t.dobLabel,
+                ),
+                const SizedBox(height: 12),
+                _DocCard(
+                  title: t.rationLabel,
+                  icon: Icons.receipt_long_outlined,
+                  name: scenario.rationName,
+                  dob: scenario.rationDob,
+                  nameLabel: t.nameLabel,
+                  dobLabel: t.dobLabel,
+                ),
+                const SizedBox(height: 24),
+
+                // ── Comparison result ──────────────────────────────────────
+                Text(t.comparisonResult.toUpperCase(),
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                        color: AppColors.onSurfaceVariant)),
+                const SizedBox(height: 10),
+                _MatchRow(
+                    label: t.nameMatchLabel,
+                    isOk: scenario.nameMatch,
+                    okText: t.matched,
+                    failText: t.notMatched),
+                const SizedBox(height: 10),
+                _MatchRow(
+                    label: t.dobMatchLabel,
+                    isOk: scenario.dobMatch,
+                    okText: t.matched,
+                    failText: t.notMatched),
+                const SizedBox(height: 24),
+
+                // ── Status / confidence / risk ─────────────────────────────
+                _StatusPanel(scenario: scenario),
+
+                const SizedBox(height: 24),
+
+                // ── Disclaimer (FR-20) ─────────────────────────────────────
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: AppColors.outlineVariant, width: 1.5),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline,
+                          color: AppColors.primary, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(scenario.toDiagnosis().disclaimer,
+                            style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.onSurfaceVariant)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            border: Border(
+                top: BorderSide(color: AppColors.surfaceContainer, width: 2)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                    onPressed: onBack, child: Text(t.goBack)),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: onNext,
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondary),
+                  child: Text(t.seeResults),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DocCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final String name;
+  final String dob;
+  final String nameLabel;
+  final String dobLabel;
+
+  const _DocCard({
+    required this.title,
+    required this.icon,
+    required this.name,
+    required this.dob,
+    required this.nameLabel,
+    required this.dobLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.outlineVariant, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: AppColors.outline),
+              const SizedBox(width: 6),
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.1,
+                      color: AppColors.onSurfaceVariant)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _kv(nameLabel, name),
+          const SizedBox(height: 6),
+          _kv(dobLabel, dob),
+        ],
+      ),
+    );
+  }
+
+  Widget _kv(String k, String v) => Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          SizedBox(
+            width: 64,
+            child: Text(k,
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.onSurfaceVariant)),
+          ),
+          Expanded(
+            child: Text(v,
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary)),
+          ),
+        ],
+      );
+}
+
+class _MatchRow extends StatelessWidget {
+  final String label;
+  final bool isOk;
+  final String okText;
+  final String failText;
+
+  const _MatchRow({
+    required this.label,
+    required this.isOk,
+    required this.okText,
+    required this.failText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isOk ? AppColors.secondary : AppColors.error;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isOk
+            ? const Color(0xFFEEF7F1)
+            : AppColors.errorContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Icon(isOk ? Icons.check_circle : Icons.cancel,
+              color: color, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(label,
+                style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary)),
+          ),
+          Text(isOk ? okText : failText,
+              style: TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w800, color: color)),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusPanel extends StatelessWidget {
+  final DemoScenario scenario;
+
+  const _StatusPanel({required this.scenario});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppText.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.outlineVariant, width: 1.5),
+      ),
+      child: Column(
+        children: [
+          _row(t.statusLabel,
+              child: _Pill(
+                  text: t.demoStatusLabel(scenario.status),
+                  color: _statusColor(scenario.status))),
+          const Divider(height: 24),
+          _row(t.confidenceLabel,
+              child: Text('${scenario.confidencePercent}%',
+                  style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primary))),
+          const Divider(height: 24),
+          _row(t.riskLabel,
+              child: _Pill(
+                  text: t.demoRiskLabel(scenario.risk),
+                  color: _riskColor(scenario.risk))),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(String label, {required Widget child}) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.onSurfaceVariant)),
+          child,
+        ],
+      );
+
+  static Color _statusColor(DemoStatus s) {
+    switch (s) {
+      case DemoStatus.approved:
+        return const Color(0xFF155724);
+      case DemoStatus.reviewRequired:
+        return const Color(0xFF856404);
+      case DemoStatus.highRisk:
+        return const Color(0xFF721C24);
+    }
+  }
+
+  static Color _riskColor(DemoRisk r) {
+    switch (r) {
+      case DemoRisk.low:
+        return const Color(0xFF155724);
+      case DemoRisk.medium:
+        return const Color(0xFF856404);
+      case DemoRisk.high:
+        return const Color(0xFF721C24);
+    }
+  }
+}
+
+class _Pill extends StatelessWidget {
+  final String text;
+  final Color color;
+
+  const _Pill({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(text,
+          style: TextStyle(
+              fontSize: 14, fontWeight: FontWeight.w800, color: color)),
     );
   }
 }
